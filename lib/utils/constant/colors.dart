@@ -189,7 +189,7 @@ class AColors {
     return isDark ? darkSurface : lightSurface;
   }
 
-  /// Get card color based on theme mode
+  /// Get cart color based on theme mode
   static Color getCard(bool isDark) {
     return isDark ? darkCard : lightCard;
   }

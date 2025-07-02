@@ -1,3 +1,4 @@
+import 'package:afronika/utils/constant/app_test_style.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -6,6 +7,9 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold();
+    return Scaffold(
+      backgroundColor: Colors.red,
+      body: Text("Basit Murad" ,style: AappTextStyle.roboto(color: Colors.black, fontSize: 19.0, weight: FontWeight.w700),),
+    );
   }
 }

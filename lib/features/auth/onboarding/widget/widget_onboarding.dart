@@ -1,4 +1,7 @@
+import 'package:afronika/utils/constant/sizes.dart';
 import 'package:flutter/material.dart';
+
+import '../../../../utils/constant/app_test_style.dart';
 
 class OnboardingPage {
   final String title;
@@ -14,41 +17,46 @@ class OnboardingPage {
 
 class OnboardingPageWidget extends StatelessWidget {
   final OnboardingPage page;
+  final bool dark;
 
-  const OnboardingPageWidget({super.key, required this.page});
+  const OnboardingPageWidget({super.key, required this.page, required this.dark});
 
   @override
   Widget build(BuildContext context) {
-    final bool dark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        SizedBox(height: 40),
         Container(
-          height: 360,
-          width: 359,
+          padding: EdgeInsets.all(10),
+          height: 330,
+          width: 330,
           decoration: BoxDecoration(
 
-            borderRadius: BorderRadius.circular(40),
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Image.asset(page.image),
+          child: Image.asset(page.image,fit: BoxFit.fill,),
         ),
 
-        SizedBox(height: 40),
+        SizedBox(height: ASizes.spaceBtwSections),
         Text(
           page.title,
-          style: TextStyle(
+          style: AappTextStyle.roboto(
             fontSize: 24,
-            fontWeight: FontWeight.w600,
-            color: dark? Colors.white: Colors.black54,
+            weight: FontWeight.bold,
+            color: dark ?Colors.white :Colors.black,
           ),
           textAlign: TextAlign.center,
         ),
-        SizedBox(height: 30),
+        SizedBox(height: ASizes.spaceBtwSections -20),
         Text(
           page.description,
-          style: TextStyle(fontSize: 16, color: dark? Colors.white: Colors.black54, height: 1.5),
           textAlign: TextAlign.center,
+          style: AappTextStyle.roboto(
+            fontSize: 16,
+            weight: FontWeight.w400,
+            color: dark ?Colors.white :Colors.black,
+          ),
+
         ),
       ],
     );

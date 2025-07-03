@@ -14,7 +14,7 @@ class Pdivider extends StatelessWidget {
         children: [
           SizedBox(width: 80, child: Divider(color: Colors.grey)),
           Text(
-            AText.oContW,
+            '',
             style: TextStyle(color: Colors.grey, fontSize: 16),
           ),
           SizedBox(width: 80, child: Divider(color: Colors.grey)),

@@ -1,3 +1,4 @@
+import 'package:afronika/common/GButton.dart';
 import 'package:afronika/features/auth/onboarding/widget/widget_onboarding.dart';
 import 'package:flutter/material.dart';
 import '../../../utils/constant/image_strings.dart';
@@ -8,14 +9,11 @@ class OnboardingScreen extends StatefulWidget {
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
-
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-
-
 
   final List<OnboardingPage> _pages = [
     OnboardingPage(
@@ -35,96 +33,78 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     ),
   ];
 
+  void _nextPage() {
+    if (_currentPage < _pages.length - 1) {
+      _pageController.nextPage(
+        duration: Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      // Navigate to next screen or handle completion
+      // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => YourNextScreen()));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool dark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: dark ? Colors.black : Colors.white,
-      body: Stack(
-        children: [
-          PageView.builder(
-            controller: _pageController,
-            itemCount: _pages.length,
-            onPageChanged: (index) {
-              setState(() {
-                _currentPage = index;
-              });
-            },
-            itemBuilder: (context, index) {
-              return OnboardingPageWidget(page: _pages[index]);
-            },
-          ),
-          Positioned(
-            bottom: 50,
-            left: 0,
-            right: 0,
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    _pages.length,
-                    (index) => Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 4),
-                      child: Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _currentPage == index
-                              ? Colors.orange
-                              : Colors.grey[300],
-                        ),
-                      ),
-                    ),
-                  ),
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+          child: Column(
+            children: [
+              Expanded(
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: _pages.length,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentPage = index;
+                    });
+                  },
+                  itemBuilder: (context, index) {
+                    return OnboardingPageWidget(page: _pages[index], dark: dark,);
+                  },
                 ),
-                SizedBox(height: 40),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 40),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (_currentPage < _pages.length - 1) {
-                          _pageController.nextPage(
-                            duration: Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        } else {
-                          // Navigate to LoginScreen
-                          // Navigator.pushReplacement(
-                          //   context,
-                          //   MaterialPageRoute(
-                          //     builder: (context) => LoginScreen(),
-                          //   ),
-                          // );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: Text(
-                        "Get Started",
+              ),
 
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
+              SizedBox(height: 20),
+
+              // Page indicators
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  _pages.length,
+                      (index) => AnimatedContainer(
+                    duration: Duration(milliseconds: 300),
+                    margin: EdgeInsets.symmetric(horizontal: 4),
+                    width: _currentPage == index ? 20 : 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(5),
+                      color: _currentPage == index
+                          ? Colors.orange
+                          : Colors.grey[300],
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+
+              SizedBox(height: 40),
+
+              // Navigation button
+              AButton(
+                text: _currentPage == _pages.length - 1 ? 'Get Started' : 'Next',
+                onPressed: _nextPage,
+              ),
+
+              SizedBox(height: 20),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

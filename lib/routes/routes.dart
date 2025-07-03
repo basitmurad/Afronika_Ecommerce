@@ -1,4 +1,5 @@
-  import 'package:afronika/features/auth/splash/splash_screen.dart';
+  import 'package:afronika/features/auth/onboarding/onboarding_screen.dart';
+import 'package:afronika/features/auth/splash/splash_screen.dart';
 import 'package:afronika/routes/routes_name.dart';
 import 'package:flutter/material.dart';
 
@@ -12,8 +13,8 @@ import 'package:flutter/material.dart';
       switch(settings.name) {
         case RouteName.splashScreen:
           return MaterialPageRoute(builder: (context) => SplashScreen());
-        // case RouteName.splashScreen:
-        //   return MaterialPageRoute(builder: (context) => SplashScreen());
+        case RouteName.onboardingScreen:
+          return MaterialPageRoute(builder: (context) => OnboardingScreen());
 
 
         default:

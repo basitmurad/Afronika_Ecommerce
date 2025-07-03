@@ -3,12 +3,7 @@ import '../utils/constant/app_test_style.dart';
 import '../utils/constant/colors.dart';
 import '../utils/device/device_utility.dart';
 
-enum AButtonType {
-  primary,
-  outlined,
-  text,
-  social
-}
+enum AButtonType { primary, outlined, text, social }
 
 class AButton extends StatelessWidget {
   final String text;
@@ -65,7 +60,11 @@ class AButton extends StatelessWidget {
     }
   }
 
-  Widget _buildPrimaryButton(BuildContext context, bool isDark, BorderRadius radius) {
+  Widget _buildPrimaryButton(
+    BuildContext context,
+    bool isDark,
+    BorderRadius radius,
+  ) {
     return GestureDetector(
       onTap: (isLoading || isDisabled) ? null : onPressed,
       child: AnimatedContainer(
@@ -78,12 +77,14 @@ class AButton extends StatelessWidget {
           boxShadow: isDisabled
               ? null
               : [
-            BoxShadow(
-              color: (backgroundColor ?? AColors.primary).withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
+                  BoxShadow(
+                    color: (backgroundColor ?? AColors.primary).withOpacity(
+                      0.3,
+                    ),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
         ),
         padding: padding ?? const EdgeInsets.symmetric(vertical: 16),
         child: _buildButtonContent(isDark),
@@ -91,7 +92,11 @@ class AButton extends StatelessWidget {
     );
   }
 
-  Widget _buildOutlinedButton(BuildContext context, bool isDark, BorderRadius radius) {
+  Widget _buildOutlinedButton(
+    BuildContext context,
+    bool isDark,
+    BorderRadius radius,
+  ) {
     return GestureDetector(
       onTap: (isLoading || isDisabled) ? null : onPressed,
       child: AnimatedContainer(
@@ -101,10 +106,7 @@ class AButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.transparent,
           borderRadius: radius,
-          border: Border.all(
-            color: _getOutlinedBorderColor(isDark),
-            width: 1,
-          ),
+          border: Border.all(color: _getOutlinedBorderColor(isDark), width: 1),
         ),
         padding: padding ?? const EdgeInsets.symmetric(vertical: 16),
         child: _buildButtonContent(isDark),
@@ -112,7 +114,11 @@ class AButton extends StatelessWidget {
     );
   }
 
-  Widget _buildTextButton(BuildContext context, bool isDark, BorderRadius radius) {
+  Widget _buildTextButton(
+    BuildContext context,
+    bool isDark,
+    BorderRadius radius,
+  ) {
     return GestureDetector(
       onTap: (isLoading || isDisabled) ? null : onPressed,
       child: Container(
@@ -128,7 +134,11 @@ class AButton extends StatelessWidget {
     );
   }
 
-  Widget _buildSocialButton(BuildContext context, bool isDark, BorderRadius radius) {
+  Widget _buildSocialButton(
+    BuildContext context,
+    bool isDark,
+    BorderRadius radius,
+  ) {
     return GestureDetector(
       onTap: (isLoading || isDisabled) ? null : onPressed,
       child: AnimatedContainer(
@@ -138,10 +148,7 @@ class AButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.transparent,
           borderRadius: radius,
-          border: Border.all(
-            color: _getSocialBorderColor(isDark),
-            width: 1,
-          ),
+          border: Border.all(color: _getSocialBorderColor(isDark), width: 1),
         ),
         padding: padding ?? const EdgeInsets.symmetric(vertical: 12),
         child: _buildButtonContent(isDark),
@@ -158,7 +165,10 @@ class AButton extends StatelessWidget {
           child: CircularProgressIndicator(
             strokeWidth: 2,
             valueColor: AlwaysStoppedAnimation<Color>(
-              textColor ?? (buttonType == AButtonType.primary ? Colors.white : AColors.primary),
+              textColor ??
+                  (buttonType == AButtonType.primary
+                      ? Colors.white
+                      : AColors.primary),
             ),
           ),
         ),
@@ -191,10 +201,7 @@ class AButton extends StatelessWidget {
               fontSize: fontSize ?? 16.0,
               weight: fontWeight ?? FontWeight.w400,
             ),
-            child: Text(
-              text,
-              textAlign: TextAlign.center,
-            ),
+            child: Text(text, textAlign: TextAlign.center),
           ),
         ),
       ],
@@ -219,7 +226,8 @@ class AButton extends StatelessWidget {
     if (isDisabled) {
       return isDark ? Colors.grey[700]! : Colors.grey[400]!;
     }
-    return backgroundColor ?? (isDark ? Colors.grey.shade600 : Colors.grey.shade300);
+    return backgroundColor ??
+        (isDark ? Colors.grey.shade600 : Colors.grey.shade300);
   }
 
   Color _getDefaultTextColor(bool isDark) {

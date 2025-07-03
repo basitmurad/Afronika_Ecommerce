@@ -1,9 +1,12 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 enum SnackBarType { success, error, info, warning }
 
-void showAppSnackBar(BuildContext context, String message, {SnackBarType type = SnackBarType.info}) {
+void showAppSnackBar(
+  BuildContext context,
+  String message, {
+  SnackBarType type = SnackBarType.info,
+}) {
   Color backgroundColor;
   Icon icon;
 
@@ -21,7 +24,6 @@ void showAppSnackBar(BuildContext context, String message, {SnackBarType type = 
       icon = const Icon(Icons.warning, color: Colors.white, size: 20);
       break;
     case SnackBarType.info:
-    default:
       backgroundColor = Colors.blue;
       icon = const Icon(Icons.info, color: Colors.white, size: 20);
       break;

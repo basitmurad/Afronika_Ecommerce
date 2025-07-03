@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../constant/colors.dart';
 import 'custom_theme/appbar_theme.dart';
 import 'custom_theme/bottom_sheet_theme.dart';
@@ -28,10 +27,7 @@ class GAppTheme {
     elevatedButtonTheme: TElevatedButtonTheme.lightElevatedButtonTheme,
     outlinedButtonTheme: TOutlinedButtonTheme.lightOutlinedButtonTheme,
     inputDecorationTheme: TTextFieldTheme.lightInputDecorationTheme,
-
   );
-
-
 
   static ThemeData darkTheme = ThemeData(
     useMaterial3: true,
@@ -41,7 +37,7 @@ class GAppTheme {
     primaryColor: AColors.primary,
     textTheme: TTextTheme.darkTextTheme,
     chipTheme: TChipTheme.darkChipTheme,
-    scaffoldBackgroundColor:AColors.darkBackground,
+    scaffoldBackgroundColor: AColors.darkBackground,
     appBarTheme: TAppBarTheme.darkAppBarTheme,
     checkboxTheme: TCheckBoxTheme.darkCheckboxTheme,
     bottomSheetTheme: TBottomSheetTheme.darkBottomSheetTheme,
@@ -49,5 +45,4 @@ class GAppTheme {
     outlinedButtonTheme: TOutlinedButtonTheme.darkOutlinedButtonTheme,
     inputDecorationTheme: TTextFieldTheme.darkInputDecorationTheme,
   );
-
 }

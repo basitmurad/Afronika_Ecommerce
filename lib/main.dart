@@ -1,10 +1,8 @@
+import 'package:afronika/features/dashborad/profile/profile%20screen.dart';
 import 'package:afronika/routes/routes.dart';
 import 'package:afronika/routes/routes_name.dart';
 import 'package:afronika/utils/themes/themes.dart';
 import 'package:flutter/material.dart';
-
-
-import 'features/auth/splash/splash_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -18,9 +16,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-
-
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -31,12 +26,8 @@ class _MyAppState extends State<MyApp> {
       initialRoute: RouteName.splashScreen,
       themeMode: ThemeMode.system,
       onUnknownRoute: (settings) {
-        return MaterialPageRoute(
-          builder: (context) => const SplashScreen(),
-        );
+        return MaterialPageRoute(builder: (context) => const ProfileScreen());
       },
-
-
     );
   }
 }

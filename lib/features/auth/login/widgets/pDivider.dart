@@ -3,7 +3,8 @@ import 'package:afronika/utils/constant/text_strings.dart';
 import 'package:flutter/material.dart';
 
 class Pdivider extends StatelessWidget {
-  const Pdivider({super.key});
+  final String title;
+  const Pdivider({required this.title,super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +15,7 @@ class Pdivider extends StatelessWidget {
         children: [
           SizedBox(width: 80, child: Divider(color: Colors.grey)),
           Text(
-            '',
+            title,
             style: TextStyle(color: Colors.grey, fontSize: 16),
           ),
           SizedBox(width: 80, child: Divider(color: Colors.grey)),

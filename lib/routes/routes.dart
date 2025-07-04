@@ -3,7 +3,9 @@ import 'package:afronika/features/auth/siginup/signup_screen.dart';
 import 'package:afronika/features/auth/splash/splash_screen.dart';
 import 'package:afronika/routes/routes_name.dart';
 import 'package:flutter/material.dart';
-
+// note: some routes are marks as pd [ path to defined ],
+// theses routes are set to login screen for default
+// please, defined paths to pd routes
 class Routes {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -13,17 +15,17 @@ class Routes {
     //   return MaterialPageRoute(builder: (context) => SplashScreen());
       case RouteName.loginScreen:
         return MaterialPageRoute(builder: (context) => LoginScreen());
-      case RouteName.accountLogin:
+      case RouteName.accountLogin: //pd
         return MaterialPageRoute(builder: (context) => LoginScreen());
-      case RouteName.accountSignup:
+      case RouteName.accountSignup: //pd
         return MaterialPageRoute(builder: (context) => LoginScreen());
-      case RouteName.forgotPScreen:
+      case RouteName.forgotPScreen: //pd
         return MaterialPageRoute(builder: (context) => LoginScreen());
-      case RouteName.contWG:
+      case RouteName.contWG: //pd
         return MaterialPageRoute(builder: (context) => LoginScreen());
       case RouteName.signUpScreen:
         return MaterialPageRoute(builder: (context) => SignupScreen());
-      case RouteName.guestScreen:
+      case RouteName.guestScreen: //pd
         return MaterialPageRoute(builder: (context) => LoginScreen());
 
       default:

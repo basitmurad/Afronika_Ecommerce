@@ -1,7 +1,3 @@
-import 'package:flutter/material.dart';
-
-import 'image_strings.dart';
-
 class AText {
   static String oBorDing1Title = "Discover African Fashion";
   static String email = "Email";

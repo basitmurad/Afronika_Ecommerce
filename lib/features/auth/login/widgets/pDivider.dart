@@ -1,5 +1,4 @@
 import 'package:afronika/utils/constant/paddings.dart';
-import 'package:afronika/utils/constant/text_strings.dart';
 import 'package:flutter/material.dart';
 
 class Pdivider extends StatelessWidget {

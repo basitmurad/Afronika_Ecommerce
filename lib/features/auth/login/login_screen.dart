@@ -21,12 +21,12 @@ class LoginScreen extends StatelessWidget {
         child: Column(
           children: [
             AppLogo(),
-            Text(
-              AText.welcome,
-              style: GoogleFonts.outfit(
-                color: isDark ? Colors.white : Colors.black,
-                fontSize: 30,
-                fontWeight: FontWeight.w500,
+            Padding(
+              padding: const EdgeInsets.only(top: 30,bottom: 10),
+              child: Text(
+                AText.welcome,
+                style: AappTextStyle.roboto(color: isDark ? Colors.white : Colors.black, fontSize: 30, weight: FontWeight.w500)
+
               ),
             ),
             Text(

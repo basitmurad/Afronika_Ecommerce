@@ -1,3 +1,4 @@
+import 'package:afronika/utils/constant/app_test_style.dart';
 import 'package:flutter/material.dart';
 
 class AppLogo extends StatelessWidget {
@@ -13,7 +14,12 @@ class AppLogo extends StatelessWidget {
           padding: const EdgeInsets.only(top: 60),
           child: RichText(
             text: TextSpan(
-              style: TextStyle(fontSize: 52, fontWeight: FontWeight.bold),
+              style: AappTextStyle.roboto(
+                color: isDark ? Colors.white : Colors.black,
+                fontSize: 52,
+                weight: FontWeight.bold,
+              ),
+
               children: [
                 TextSpan(
                   text: 'Afr',
@@ -21,7 +27,7 @@ class AppLogo extends StatelessWidget {
                 ),
                 TextSpan(
                   text: 'o',
-                  style: TextStyle(color: isDark?Colors.white:Colors.black),
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
                 ),
                 TextSpan(
                   text: 'n',

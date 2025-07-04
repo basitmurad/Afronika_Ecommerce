@@ -1,14 +1,13 @@
 import 'package:afronika/common/GButton.dart';
 import 'package:afronika/common/app_logo.dart';
 import 'package:afronika/common/text_input_widget.dart';
-import 'package:afronika/features/auth/login/widgets/pDivider.dart';
+import 'package:afronika/features/auth/login/widgets/p_divider.dart';
 import 'package:afronika/routes/routes_name.dart';
 import 'package:afronika/utils/constant/app_test_style.dart';
 import 'package:afronika/utils/constant/image_strings.dart';
 import 'package:afronika/utils/constant/paddings.dart';
 import 'package:afronika/utils/constant/text_strings.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -22,11 +21,14 @@ class LoginScreen extends StatelessWidget {
           children: [
             AppLogo(),
             Padding(
-              padding: const EdgeInsets.only(top: 30,bottom: 10),
+              padding: const EdgeInsets.only(top: 30, bottom: 10),
               child: Text(
                 AText.welcome,
-                style: AappTextStyle.roboto(color: isDark ? Colors.white : Colors.black, fontSize: 30, weight: FontWeight.w500)
-
+                style: AappTextStyle.roboto(
+                  color: isDark ? Colors.white : Colors.black,
+                  fontSize: 30,
+                  weight: FontWeight.w500,
+                ),
               ),
             ),
             Text(
@@ -57,6 +59,8 @@ class LoginScreen extends StatelessWidget {
               padding: Paddings.sidePd,
               child: AButton(
                 text: AText.login,
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
                 height: 60,
                 textColor: Colors.white,
                 onPressed: () {
@@ -69,6 +73,8 @@ class LoginScreen extends StatelessWidget {
               child: AButton(
                 height: 30,
                 text: AText.forgotP,
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
                 buttonType: AButtonType.text,
                 textColor: Colors.lightBlue,
                 onPressed: () {
@@ -81,6 +87,8 @@ class LoginScreen extends StatelessWidget {
               padding: Paddings.sidePd,
               child: AButton(
                 text: AText.cWGoogle,
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
                 prefixImagePath: GImagePath.googleImage,
                 height: 60,
                 buttonType: AButtonType.outlined,
@@ -109,6 +117,8 @@ class LoginScreen extends StatelessWidget {
                     buttonType: AButtonType.text,
                     height: 30,
                     width: 70,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
                     textColor: Colors.lightBlue,
                     onPressed: () {
                       Navigator.pushNamed(context, RouteName.signUpScreen);
@@ -122,6 +132,8 @@ class LoginScreen extends StatelessWidget {
               child: AButton(
                 text: AText.cAGuest,
                 height: 60,
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
                 textColor: isDark ? Colors.white : Colors.black,
                 backgroundColor: isDark ? Colors.grey[900] : Colors.grey[100],
                 onPressed: () {

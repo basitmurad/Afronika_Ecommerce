@@ -18,6 +18,10 @@ class AText {
   static String nameHint = "Enter your Name";
   static String cPass = "Confirm Password";
   static String cPassHint = "Confirm your Password";
+  static String sendRLink = "Send Reset Link";
+  static String backToLogin = "Back to Login";
+  static String forgotPGuide =
+      "Enter your email address and we'll send you instructions to reset your password.";
 
   static String oBorDing1Sub =
       "Explore the rich heritage and contemporary styles of African fashion. From traditional patterns to modern designs, immerse yourself in a world of unique creativity.";

@@ -66,6 +66,8 @@ class SignupScreen extends StatelessWidget {
               padding: Paddings.sidePd,
               child: AButton(
                 text: AText.signUp,
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
                 height: 60,
                 textColor: Colors.white,
                 onPressed: () {
@@ -93,6 +95,8 @@ class SignupScreen extends StatelessWidget {
                     height: 30,
                     width: 50,
                     textColor: Colors.lightBlue,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
                     onPressed: () {
                       Navigator.pushNamed(context, RouteName.loginScreen);
                     },
@@ -105,6 +109,8 @@ class SignupScreen extends StatelessWidget {
               child: AButton(
                 text: AText.cAGuest,
                 height: 60,
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
                 textColor: isDark ? Colors.white : Colors.black,
                 backgroundColor: isDark ? Colors.grey[900] : Colors.grey[100],
                 onPressed: () {

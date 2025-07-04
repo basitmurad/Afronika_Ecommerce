@@ -5,14 +5,15 @@ class AppLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 90),
+          padding: const EdgeInsets.only(top: 60),
           child: RichText(
             text: TextSpan(
-              style: TextStyle(fontSize: 56, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 52, fontWeight: FontWeight.bold),
               children: [
                 TextSpan(
                   text: 'Afr',
@@ -20,7 +21,7 @@ class AppLogo extends StatelessWidget {
                 ),
                 TextSpan(
                   text: 'o',
-                  style: TextStyle(color: Colors.black),
+                  style: TextStyle(color: isDark?Colors.white:Colors.black),
                 ),
                 TextSpan(
                   text: 'n',

@@ -205,7 +205,8 @@ class _SplashScreenState extends State<SplashScreen>
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                       ),
-                      child: RichText(
+                      child:
+                      RichText(
                         text: TextSpan(
                           style: AappTextStyle.roboto(
                             fontSize: 56,

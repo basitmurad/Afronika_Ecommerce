@@ -12,12 +12,12 @@ class Pdivider extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(width: 80, child: Divider(color: Colors.grey)),
+          Expanded(child: SizedBox(width: 80, child: Divider(color: Colors.grey))),
           Text(
             title,
             style: TextStyle(color: Colors.grey, fontSize: 16),
           ),
-          SizedBox(width: 80, child: Divider(color: Colors.grey)),
+          Expanded(child: SizedBox(width: 80, child: Divider(color: Colors.grey))),
         ],
       ),
     );

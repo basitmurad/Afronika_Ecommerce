@@ -41,7 +41,7 @@ class MyApp extends StatelessWidget {
         ),
       ),
       onGenerateRoute: Routes.generateRoute,
-      initialRoute: RouteName.loginScreen,
+      initialRoute: RouteName.splashScreen,
       themeMode: ThemeMode.system,
       builder: (context, child) {
         // This ensures status bar color changes with theme

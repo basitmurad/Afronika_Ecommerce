@@ -98,7 +98,7 @@ class _TextInputWidgetState extends State<TextInputWidget> {
                 style:  AappTextStyle.roboto(
                   color: widget.dark ? AColors.lightGray100 : AColors.darkGray900,
                   fontSize: 16.0,
-                  weight: FontWeight.w600,
+                  weight: FontWeight.w500,
                 ),
               ),
               if (widget.isRequired)

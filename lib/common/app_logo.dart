@@ -1,44 +1,59 @@
 import 'package:afronika/utils/constant/app_test_style.dart';
+import 'package:afronika/utils/device/device_utility.dart';
 import 'package:flutter/material.dart';
+
+import '../utils/constant/colors.dart';
 
 class AppLogo extends StatelessWidget {
   const AppLogo({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool dark = ADeviceUtils.isDarkMode(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 60),
-          child: RichText(
-            text: TextSpan(
-              style: AappTextStyle.roboto(
-                color: isDark ? Colors.white : Colors.black,
-                fontSize: 52,
-                weight: FontWeight.bold,
-              ),
-
-              children: [
-                TextSpan(
-                  text: 'Afr',
-                  style: TextStyle(color: Colors.red[800]),
-                ),
-                TextSpan(
-                  text: 'o',
-                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                ),
-                TextSpan(
-                  text: 'n',
-                  style: TextStyle(color: Colors.amber[700]),
-                ),
-                TextSpan(
-                  text: 'ika',
-                  style: TextStyle(color: Colors.lightBlue[300]),
-                ),
-              ],
+        RichText(
+          text: TextSpan(
+            style: AappTextStyle.roboto(
+              fontSize: 56,
+              weight: FontWeight.bold,
+              color: Colors.red,
             ),
+            children: [
+              TextSpan(
+                text: 'Afr',
+                style: AappTextStyle.roboto(
+                  fontSize: 56,
+                  weight: FontWeight.bold,
+                  color: Colors.red,
+                ),
+              ),
+              TextSpan(
+                text: 'o',
+                style: AappTextStyle.roboto(
+                  fontSize: 56,
+                  weight: FontWeight.bold,
+                  color: dark ?Colors.white :Colors.black,
+                ),
+              ),
+              TextSpan(
+                text: 'n',
+                style: AappTextStyle.roboto(
+                  fontSize: 56,
+                  weight: FontWeight.bold,
+                  color: AColors.primary,
+                ),
+              ),
+              TextSpan(
+                text: 'ika',
+                style: AappTextStyle.roboto(
+                  fontSize: 56,
+                  weight: FontWeight.bold,
+                  color: Colors.cyan,
+                ),
+              ),
+            ],
           ),
         ),
       ],

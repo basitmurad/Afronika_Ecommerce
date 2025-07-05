@@ -1,5 +1,6 @@
 import 'package:afronika/features/auth/login/forgot_pas_screen.dart';
 import 'package:afronika/features/auth/login/login_screen.dart';
+import 'package:afronika/features/auth/onboarding/onboarding_screen.dart';
 import 'package:afronika/features/auth/siginup/signup_screen.dart';
 import 'package:afronika/features/auth/splash/splash_screen.dart';
 import 'package:afronika/routes/routes_name.dart';
@@ -12,24 +13,15 @@ class Routes {
     switch (settings.name) {
       case RouteName.splashScreen:
         return MaterialPageRoute(builder: (context) => SplashScreen());
-    // case RouteName.splashScreen:
-    //   return MaterialPageRoute(builder: (context) => SplashScreen());
+    case RouteName.onboardingScreen:
+      return MaterialPageRoute(builder: (context) => OnboardingScreen());
       case RouteName.loginScreen:
-        return MaterialPageRoute(builder: (context) => LoginScreen());
-      case RouteName.accountLogin: //pd
-        return MaterialPageRoute(builder: (context) => LoginScreen());
-      case RouteName.accountSignup: //pd
-        return MaterialPageRoute(builder: (context) => LoginScreen());
-      case RouteName.forgotPScreen: //pd
-        return MaterialPageRoute(builder: (context) => ForgotPasScreen());
-      case RouteName.contWG: //pd
-        return MaterialPageRoute(builder: (context) => LoginScreen());
+      return MaterialPageRoute(builder: (context) => LoginScreen());
       case RouteName.signUpScreen:
-        return MaterialPageRoute(builder: (context) => SignupScreen());
-      case RouteName.guestScreen: //pd
-        return MaterialPageRoute(builder: (context) => LoginScreen());
-      case RouteName.sendResetLink: //pd
-        return MaterialPageRoute(builder: (context) => LoginScreen());
+      return MaterialPageRoute(builder: (context) => SignupScreen());
+      case RouteName.forgotPasScreen:
+      return MaterialPageRoute(builder: (context) => ForgotPasScreen());
+
       default:
         return MaterialPageRoute(
           builder: (context) {

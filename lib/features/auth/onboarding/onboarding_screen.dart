@@ -1,5 +1,6 @@
 import 'package:afronika/common/GButton.dart';
 import 'package:afronika/features/auth/onboarding/widget/widget_onboarding.dart';
+import 'package:afronika/routes/routes_name.dart';
 import 'package:flutter/material.dart';
 import '../../../utils/constant/image_strings.dart';
 import '../../../utils/constant/text_strings.dart';
@@ -40,6 +41,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         curve: Curves.easeInOut,
       );
     } else {
+      Navigator.pushNamed(context, RouteName.loginScreen);
       // Navigate to next screen or handle completion
       // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => YourNextScreen()));
     }

@@ -96,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
               AButton(
                 text: AText.login,
                 onPressed: () {
-                  Navigator.pushNamed(context, RouteName.loginScreen);
+                  Navigator.pushNamed(context, RouteName.navigationMenu);
                 },
               ),
               SizedBox(height: ASizes.spaceBtwInputFields,),
@@ -115,7 +115,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 backgroundColor: Colors.grey,
                 textColor: isDark ? Colors.white : Colors.black,
                 onPressed: () {
-                  // Navigator.pushNamed(context, RouteName.contWG);
                 },
               ),
               SizedBox(height: ASizes.spaceBtwInputFields,),

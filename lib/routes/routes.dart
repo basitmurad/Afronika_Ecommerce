@@ -5,6 +5,8 @@ import 'package:afronika/features/auth/siginup/signup_screen.dart';
 import 'package:afronika/features/auth/splash/splash_screen.dart';
 import 'package:afronika/routes/routes_name.dart';
 import 'package:flutter/material.dart';
+
+import '../NavigationMenu.dart';
 // note: some routes are marks as pd [ path to defined ],
 // theses routes are set to login screen for default
 // please, defined paths to pd routes
@@ -21,6 +23,8 @@ class Routes {
       return MaterialPageRoute(builder: (context) => SignupScreen());
       case RouteName.forgotPasScreen:
       return MaterialPageRoute(builder: (context) => ForgotPasScreen());
+ case RouteName.navigationMenu:
+      return MaterialPageRoute(builder: (context) => NavigationMenu());
 
       default:
         return MaterialPageRoute(

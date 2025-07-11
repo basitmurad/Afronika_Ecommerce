@@ -1,3 +1,4 @@
+
 import 'package:afronika/routes/routes.dart';
 import 'package:afronika/routes/routes_name.dart';
 import 'package:afronika/utils/themes/themes.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 
 
 import 'features/auth/splash/splash_screen.dart';
+import 'features/dashborad/home/screen/home_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -32,7 +34,7 @@ class _MyAppState extends State<MyApp> {
       themeMode: ThemeMode.system,
       onUnknownRoute: (settings) {
         return MaterialPageRoute(
-          builder: (context) => const SplashScreen(),
+          builder: (context) => const HomeScreen(),
         );
       },
 

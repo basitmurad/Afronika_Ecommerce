@@ -1,3 +1,4 @@
+import 'package:afronika/routes/routes_name.dart';
 import 'package:afronika/utils/constant/app_test_style.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +10,21 @@ class SplashScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.red,
-      body: Text("Basit Murad" ,style: AappTextStyle.roboto(color: Colors.black, fontSize: 19.0, weight: FontWeight.w700),),
+      body: Center(
+        child: InkWell(
+          onTap: (){
+            Navigator.pushNamed(context, RouteName.homeScreen);
+          },
+          child: Text(
+            "Basit Murad",
+            style: AappTextStyle.roboto(
+              color: Colors.black,
+              fontSize: 19.0,
+              weight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -5,6 +5,8 @@ class RouteName {
   static const String signUpScreen = '/signUpScreen';
   static const String forgotPasScreen = '/forgotPasScreen';
   static const String navigationMenu = '/navigationMenu';
+  static const String emailVerificationScreen = '/emailVerificationScreen';
+  static const String emailVerificationScreen1 = '/emailVerificationScreen1';
 
 
 

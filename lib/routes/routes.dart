@@ -7,6 +7,8 @@ import 'package:afronika/routes/routes_name.dart';
 import 'package:flutter/material.dart';
 
 import '../NavigationMenu.dart';
+import '../features/EmailVerificationScreen1.dart';
+import '../features/auth/EmailVerificationScreen.dart';
 // note: some routes are marks as pd [ path to defined ],
 // theses routes are set to login screen for default
 // please, defined paths to pd routes
@@ -25,6 +27,10 @@ class Routes {
       return MaterialPageRoute(builder: (context) => ForgotPasScreen());
  case RouteName.navigationMenu:
       return MaterialPageRoute(builder: (context) => NavigationMenu());
+      case RouteName.emailVerificationScreen1:
+      return MaterialPageRoute(builder: (context) => EmailVerificationScreen1());
+      case RouteName.emailVerificationScreen:
+      return MaterialPageRoute(builder: (context) => EmailVerificationScreen(email: '',));
 
       default:
         return MaterialPageRoute(

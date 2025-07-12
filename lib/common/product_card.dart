@@ -23,7 +23,7 @@ class ProductCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Image(
-          height: 180,
+          height: 170,
           width: 180,
           image: AssetImage(imagePath),
         ),

@@ -1,5 +1,6 @@
 import 'package:afronika/common/GButton.dart';
 import 'package:afronika/common/text_input_widget.dart';
+import 'package:afronika/routes/routes_name.dart';
 import 'package:afronika/utils/constant/app_test_style.dart';
 import 'package:afronika/utils/constant/image_strings.dart';
 import 'package:afronika/utils/constant/sizes.dart';
@@ -65,7 +66,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
             child: Column(
               children: [
-                const SizedBox(height: 40),
+                const SizedBox(height: 16),
 
                 // Profile Picture
                 Container(
@@ -362,11 +363,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       // Navigate to login/onboarding screen
       if (mounted) {
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          'onboardingScreen', // Replace with your actual route name
-              (route) => false,
-        );
+        Navigator.pushNamed(context, RouteName.loginScreen);
       }
     } catch (e) {
       print('Error during logout: $e');

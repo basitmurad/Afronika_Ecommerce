@@ -1,9 +1,9 @@
 import 'package:afronika/common/product_card.dart';
 import 'package:afronika/features/dashborad/home/drawer/custom_navigation_drawer.dart';
+import 'package:afronika/routes/routes_name.dart';
 import 'package:afronika/utils/constant/app_test_style.dart';
 import 'package:afronika/utils/constant/image_strings.dart';
 import 'package:afronika/utils/device/device_utility.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
@@ -26,168 +26,201 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final bool isDark = ADeviceUtils.isDarkMode(context);
 
     return Scaffold(
       key: _scaffoldKey,
-      appBar: AppBar(
-        backgroundColor: isDark ? Colors.black : Colors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () {
-            _scaffoldKey.currentState?.openDrawer();
-          },
+      backgroundColor: isDark ? Colors.black : Colors.white,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: AppBar(
+          backgroundColor: isDark ? Colors.black : Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              _scaffoldKey.currentState?.openDrawer();
+            },
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () {
+                Navigator.pushNamed(context, RouteName.searchScreen);
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.favorite_border),
+              onPressed: () {
+                // Navigate to wishlist
+              },
+            ),
+            const SizedBox(width: 8),
+          ],
         ),
       ),
       drawer: CustomNavigationDrawer(isDark: isDark),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            SizedBox(
-              height: 180,
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: imageUrls.length,
-                itemBuilder: (context, index) {
-                  return Stack(
-                    children: [
-                      Positioned.fill(
-                        child: ClipRRect(
-                          child: Image.network(
-                            imageUrls[index],
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        left: 130,
-                        right: 110,
-                        bottom: 10,
-                        child: SmoothPageIndicator(
-                          controller: _pageController,
-                          count: imageUrls.length,
-                          effect: ExpandingDotsEffect(
-                            activeDotColor: isDark ? Colors.white : Colors.red,
-                            dotHeight: 8,
-                            dotWidth: 8,
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-            SizedBox(height: 12),
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: 12),
-              alignment: Alignment.topLeft,
-              child: Text(
-                'New Arrivals',
-                style: AappTextStyle.roboto(
-                  color: isDark ? AColors.primary : Colors.black,
-                  fontSize: 16.0,
-                  weight: FontWeight.w400,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Image Carousel Section
+                    _buildImageCarousel(isDark),
+                    const SizedBox(height: 24),
+
+                    // New Arrivals Section
+                    _buildSectionHeader('New Arrivals', isDark),
+                    const SizedBox(height: 16),
+                    _buildProductSection(isDark),
+                    const SizedBox(height: 24),
+
+                    // Recommended Section
+                    _buildSectionHeader('Recommended for you', isDark),
+                    const SizedBox(height: 16),
+                    _buildProductSection(isDark),
+                    const SizedBox(height: 24),
+
+                    // Top Selling Section
+                    _buildSectionHeader('Top selling', isDark),
+                    const SizedBox(height: 16),
+                    _buildProductSection(isDark),
+                    const SizedBox(height: 24),
+                  ],
                 ),
               ),
-            ),
-            SizedBox(height: 12),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16 ,vertical: 14),
-              child: Row(
-                children: [
-                  ProductCard(
-                    imagePath: GImagePath.image1,
-                    title: 'Casual Dress',
-                    price: '394',
-                    isDark: isDark,
-                  ),
-                  const SizedBox(width: 20),
-                  ProductCard(
-                    imagePath: GImagePath.image2,
-                    title: 'T-Shirt',
-                    price: '210',
-                    isDark: isDark,
-                  ),
-                  // Add more ProductItem widgets as needed
-                ],
-              ),
-            ),
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: 12),
-              alignment: Alignment.topLeft,
-              child: Text(
-                'Recommended for you',
-                style: AappTextStyle.roboto(
-                  color: isDark ? AColors.primary : Colors.black,
-                  fontSize: 16.0,
-                  weight: FontWeight.w400,
-                ),
-              ),
-            ),
-            SizedBox(height: 12),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16 ,vertical: 14),
-              child: Row(
-                children: [
-                  ProductCard(
-                    imagePath: GImagePath.image1,
-                    title: 'Casual Dress',
-                    price: '394',
-                    isDark: isDark,
-                  ),
-                  const SizedBox(width: 20),
-                  ProductCard(
-                    imagePath: GImagePath.image2,
-                    title: 'T-Shirt',
-                    price: '210',
-                    isDark: isDark,
-                  ),
-                  // Add more ProductItem widgets as needed
-                ],
-              ),
-            ),
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: 12),
-              alignment: Alignment.topLeft,
-              child: Text(
-                'Top selling',
-                style: AappTextStyle.roboto(
-                  color: isDark ? AColors.primary : Colors.black,
-                  fontSize: 16.0,
-                  weight: FontWeight.w400,
-                ),
-              ),
-            ),
-            SizedBox(height: 12),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16 ,vertical: 14),
-              child: Row(
-                children: [
-                  ProductCard(
-                    imagePath: GImagePath.image1,
-                    title: 'Casual Dress',
-                    price: '394',
-                    isDark: isDark,
-                  ),
-                  const SizedBox(width: 20),
-                  ProductCard(
-                    imagePath: GImagePath.image2,
-                    title: 'T-Shirt',
-                    price: '210',
-                    isDark: isDark,
-                  ),
-                  // Add more ProductItem widgets as needed
-                ],
-              ),
-            ),
-          ],
+            );
+          },
         ),
+      ),
+    );
+  }
+
+  Widget _buildImageCarousel(bool isDark) {
+    return SizedBox(
+      height: 200,
+      child: Stack(
+        children: [
+          PageView.builder(
+            controller: _pageController,
+            itemCount: imageUrls.length,
+            itemBuilder: (context, index) {
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    imageUrls[index],
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: 200,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: isDark ? Colors.grey[800] : Colors.grey[200],
+                        child: const Center(
+                          child: Icon(Icons.image_not_supported),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+          Positioned(
+            bottom: 16,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: SmoothPageIndicator(
+                controller: _pageController,
+                count: imageUrls.length,
+                effect: ExpandingDotsEffect(
+                  activeDotColor: isDark ? Colors.white : Colors.red,
+                  dotColor: isDark ? Colors.white.withOpacity(0.5) : Colors.red.withOpacity(0.5),
+                  dotHeight: 8,
+                  dotWidth: 8,
+                  spacing: 8,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Text(
+        title,
+        style: AappTextStyle.roboto(
+          color: isDark ? AColors.primary : Colors.black,
+          fontSize: 18.0,
+          weight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProductSection(bool isDark) {
+    final List<Map<String, String>> products = [
+      {
+        'image': GImagePath.image1,
+        'title': 'Casual Dress',
+        'price': '394',
+      },
+      {
+        'image': GImagePath.image2,
+        'title': 'T-Shirt',
+        'price': '210',
+      },
+      {
+        'image': GImagePath.image1,
+        'title': 'Summer Dress',
+        'price': '299',
+      },
+      {
+        'image': GImagePath.image2,
+        'title': 'Polo Shirt',
+        'price': '189',
+      },
+    ];
+
+    return SizedBox(
+      height: 280,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: products.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 16),
+        itemBuilder: (context, index) {
+          final product = products[index];
+          return SizedBox(
+            width: 160,
+            child: ProductCard(
+              imagePath: product['image']!,
+              title: product['title']!,
+              price: product['price']!,
+              isDark: isDark,
+            ),
+          );
+        },
       ),
     );
   }

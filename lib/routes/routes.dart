@@ -9,6 +9,8 @@ import 'package:flutter/material.dart';
 import '../NavigationMenu.dart';
 import '../features/EmailVerificationScreen1.dart';
 import '../features/auth/EmailVerificationScreen.dart';
+import '../features/dashborad/home/search/search_screen.dart';
+
 // note: some routes are marks as pd [ path to defined ],
 // theses routes are set to login screen for default
 // please, defined paths to pd routes
@@ -17,20 +19,26 @@ class Routes {
     switch (settings.name) {
       case RouteName.splashScreen:
         return MaterialPageRoute(builder: (context) => SplashScreen());
-    case RouteName.onboardingScreen:
-      return MaterialPageRoute(builder: (context) => OnboardingScreen());
+      case RouteName.onboardingScreen:
+        return MaterialPageRoute(builder: (context) => OnboardingScreen());
       case RouteName.loginScreen:
-      return MaterialPageRoute(builder: (context) => LoginScreen());
+        return MaterialPageRoute(builder: (context) => LoginScreen());
       case RouteName.signUpScreen:
-      return MaterialPageRoute(builder: (context) => SignupScreen());
+        return MaterialPageRoute(builder: (context) => SignupScreen());
       case RouteName.forgotPasScreen:
-      return MaterialPageRoute(builder: (context) => ForgotPasScreen());
- case RouteName.navigationMenu:
-      return MaterialPageRoute(builder: (context) => NavigationMenu());
+        return MaterialPageRoute(builder: (context) => ForgotPasScreen());
+      case RouteName.navigationMenu:
+        return MaterialPageRoute(builder: (context) => NavigationMenu());
+        case RouteName.searchScreen:
+        return MaterialPageRoute(builder: (context) => SearchScreen());
       case RouteName.emailVerificationScreen1:
-      return MaterialPageRoute(builder: (context) => EmailVerificationScreen1());
+        return MaterialPageRoute(
+          builder: (context) => EmailVerificationScreen1(),
+        );
       case RouteName.emailVerificationScreen:
-      return MaterialPageRoute(builder: (context) => EmailVerificationScreen(email: '',));
+        return MaterialPageRoute(
+          builder: (context) => EmailVerificationScreen(email: ''),
+        );
 
       default:
         return MaterialPageRoute(

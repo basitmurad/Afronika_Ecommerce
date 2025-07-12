@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 import '../../../services/UserService.dart';
 
@@ -13,6 +14,7 @@ enum AuthStatus {
 
 class AuthProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseDatabase _database = FirebaseDatabase.instance;
   final UserService _userService = UserService.instance;
 
   AuthStatus _status = AuthStatus.uninitialized;
@@ -39,6 +41,71 @@ class AuthProvider extends ChangeNotifier {
     });
   }
 
+  // Save user data to Realtime Database
+  Future<void> _saveUserToRealtimeDB({
+    required User user,
+    String? phoneNumber,
+    Map<String, dynamic>? additionalData,
+  }) async {
+    try {
+      DatabaseReference userRef = _database.ref('users/${user.uid}');
+
+      final userData = {
+        'uid': user.uid,
+        'email': user.email,
+        'displayName': user.displayName,
+        'photoURL': user.photoURL,
+        'emailVerified': user.emailVerified,
+        'createdAt': ServerValue.timestamp,
+        'lastUpdated': ServerValue.timestamp,
+        'isOnline': false,
+        'lastSeen': ServerValue.timestamp,
+        'accountType': 'email',
+        'signupMethod': 'email_password',
+        ...?additionalData,
+      };
+
+      // Add phone number if provided
+      if (phoneNumber != null && phoneNumber.isNotEmpty) {
+        userData['phoneNumber'] = phoneNumber;
+      }
+
+      // Remove null values
+      userData.removeWhere((key, value) => value == null);
+
+      await userRef.set(userData);
+      print("✅ User data saved to Realtime Database");
+
+      // Also update UserService
+      await _userService.updateUserData(userData);
+      print("✅ User data saved to UserService");
+
+    } catch (e) {
+      print("❌ Error saving user to Realtime DB: $e");
+      throw Exception('Failed to save user data: $e');
+    }
+  }
+
+  // Update user data in Realtime Database
+  Future<void> _updateUserInRealtimeDB(Map<String, dynamic> updates) async {
+    if (_user != null) {
+      try {
+        DatabaseReference userRef = _database.ref('users/${_user!.uid}');
+
+        updates['lastUpdated'] = ServerValue.timestamp;
+
+        await userRef.update(updates);
+        print("✅ User data updated in Realtime Database: ${updates.keys.join(', ')}");
+
+        // Also update UserService
+        await _userService.updateUserData(updates);
+
+      } catch (e) {
+        print("❌ Error updating user in Realtime DB: $e");
+      }
+    }
+  }
+
   void _updateAuthStatus() async {
     if (_user != null) {
       if (_user!.emailVerified) {
@@ -50,6 +117,12 @@ class AuthProvider extends ChangeNotifier {
           user: _user!,
           isEmailVerified: true,
         );
+
+        // Update verification status in Realtime DB
+        await _updateUserInRealtimeDB({
+          'emailVerified': true,
+          'isOnline': true,
+        });
       } else {
         _status = AuthStatus.emailVerificationPending;
         print("user is verification pending");
@@ -59,6 +132,11 @@ class AuthProvider extends ChangeNotifier {
           user: _user!,
           isEmailVerified: false,
         );
+
+        // Update verification status in Realtime DB
+        await _updateUserInRealtimeDB({
+          'emailVerified': false,
+        });
       }
     } else {
       _status = AuthStatus.unauthenticated;
@@ -85,40 +163,61 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Sign Up with Email and Password
+  // Sign Up with Email and Password - UPDATED WITH REALTIME DB
   Future<bool> signUpWithEmailAndPassword({
     required String email,
     required String password,
     required String name,
-  }) async {
-    try {
+    String? phoneNumber,
+  }) async {try {
       _setLoading(true);
       _setError(null);
       _status = AuthStatus.authenticating;
       notifyListeners();
 
+      // Step 1: Create user account
       UserCredential result = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
       if (result.user != null) {
-        // Update user profile with name
+        // Step 2: Update user profile with name
         await result.user!.updateDisplayName(name);
 
-        // Send email verification
+        // Refresh user to get updated info
+        await result.user!.reload();
+        _user = _auth.currentUser;
+
+        // Step 3: Save user data to Realtime Database BEFORE sending verification
+        await _saveUserToRealtimeDB(
+          user: _user!,
+          phoneNumber: phoneNumber,
+          additionalData: {
+            'registrationComplete': false,
+            'emailVerificationSent': false,
+          },
+        );
+
+        // Step 4: Send email verification
         await sendEmailVerification();
 
-        _user = result.user;
+        // Step 5: Update that verification email was sent
+        await _updateUserInRealtimeDB({
+          'emailVerificationSent': true,
+          'verificationEmailSentAt': ServerValue.timestamp,
+        });
+
         _status = AuthStatus.emailVerificationPending;
 
-        // Save user login state
+        // Step 6: Save user login state in UserService
         await _userService.saveUserLogin(
           user: _user!,
           isEmailVerified: false,
         );
 
         _setLoading(false);
+        print("🎉 Signup successful - User data saved to Realtime DB");
         return true;
       }
       return false;
@@ -131,16 +230,13 @@ class AuthProvider extends ChangeNotifier {
       _setError('An unexpected error occurred. Please try again.');
       _status = AuthStatus.unauthenticated;
       _setLoading(false);
+      print("❌ Signup error: $e");
       return false;
     }
   }
 
   // Sign In with Email and Password
-  Future<bool> signInWithEmailAndPassword({
-    required String email,
-    required String password,
-  }) async {
-    try {
+  Future<bool> signInWithEmailAndPassword({required String email, required String password,}) async {try {
       _setLoading(true);
       _setError(null);
       _status = AuthStatus.authenticating;
@@ -161,6 +257,13 @@ class AuthProvider extends ChangeNotifier {
             user: _user!,
             isEmailVerified: true,
           );
+
+          // Update login info in Realtime DB
+          await _updateUserInRealtimeDB({
+            'lastLoginAt': ServerValue.timestamp,
+            'isOnline': true,
+            'emailVerified': true,
+          });
         } else {
           _status = AuthStatus.emailVerificationPending;
 
@@ -169,6 +272,12 @@ class AuthProvider extends ChangeNotifier {
             user: _user!,
             isEmailVerified: false,
           );
+
+          // Update login info in Realtime DB
+          await _updateUserInRealtimeDB({
+            'lastLoginAt': ServerValue.timestamp,
+            'emailVerified': false,
+          });
         }
         _setLoading(false);
         return true;
@@ -192,6 +301,13 @@ class AuthProvider extends ChangeNotifier {
       User? user = _auth.currentUser;
       if (user != null && !user.emailVerified) {
         await user.sendEmailVerification();
+
+        // Update Realtime DB that verification email was sent
+        await _updateUserInRealtimeDB({
+          'emailVerificationSent': true,
+          'verificationEmailSentAt': ServerValue.timestamp,
+        });
+
         return true;
       }
       return false;
@@ -219,6 +335,14 @@ class AuthProvider extends ChangeNotifier {
           // Update UserService with verified status
           await _userService.updateEmailVerificationStatus(true);
 
+          // Update Realtime DB with verification status
+          await _updateUserInRealtimeDB({
+            'emailVerified': true,
+            'emailVerifiedAt': ServerValue.timestamp,
+            'registrationComplete': true,
+            'isOnline': true,
+          });
+
           notifyListeners();
           return true;
         } else {
@@ -229,6 +353,11 @@ class AuthProvider extends ChangeNotifier {
 
           // Update UserService with unverified status
           await _userService.updateEmailVerificationStatus(false);
+
+          // Update Realtime DB
+          await _updateUserInRealtimeDB({
+            'emailVerified': false,
+          });
 
           notifyListeners();
           return false;
@@ -256,6 +385,13 @@ class AuthProvider extends ChangeNotifier {
           if (currentUser != null) {
             _user = currentUser;
             _status = AuthStatus.authenticated;
+
+            // Update user presence in Realtime DB
+            await _updateUserInRealtimeDB({
+              'isOnline': true,
+              'lastSeen': ServerValue.timestamp,
+            });
+
             print("🔄 Auto-login: User authenticated and verified");
           } else {
             // Firebase session expired, clear saved state
@@ -270,6 +406,12 @@ class AuthProvider extends ChangeNotifier {
           if (currentUser != null) {
             _user = currentUser;
             _status = AuthStatus.emailVerificationPending;
+
+            // Update presence but keep verification status
+            await _updateUserInRealtimeDB({
+              'lastSeen': ServerValue.timestamp,
+            });
+
             print("🔄 Auto-login: User authenticated but not verified");
           } else {
             // Firebase session expired, clear saved state
@@ -318,6 +460,14 @@ class AuthProvider extends ChangeNotifier {
   // Sign Out
   Future<void> signOut() async {
     try {
+      // Update user as offline in Realtime DB before signing out
+      if (_user != null) {
+        await _updateUserInRealtimeDB({
+          'isOnline': false,
+          'lastSeen': ServerValue.timestamp,
+        });
+      }
+
       await _auth.signOut();
       await _userService.clearUserLogin(); // Clear saved login state
       _user = null;
@@ -330,78 +480,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Delete Account
-  Future<bool> deleteAccount() async {
-    try {
-      _setLoading(true);
-      _setError(null);
 
-      await _user?.delete();
-      await _userService.clearUserLogin(); // Clear saved login state
-      _user = null;
-      _status = AuthStatus.unauthenticated;
-      _setLoading(false);
-      notifyListeners();
-      return true;
-    } on FirebaseAuthException catch (e) {
-      _setError(_getFirebaseErrorMessage(e));
-      _setLoading(false);
-      return false;
-    } catch (e) {
-      _setError('Failed to delete account. Please try again.');
-      _setLoading(false);
-      return false;
-    }
-  }
-
-  // Update Password
-  Future<bool> updatePassword(String newPassword) async {
-    try {
-      _setLoading(true);
-      _setError(null);
-
-      await _user?.updatePassword(newPassword);
-      _setLoading(false);
-      return true;
-    } on FirebaseAuthException catch (e) {
-      _setError(_getFirebaseErrorMessage(e));
-      _setLoading(false);
-      return false;
-    } catch (e) {
-      _setError('Failed to update password. Please try again.');
-      _setLoading(false);
-      return false;
-    }
-  }
-
-  // Reauthenticate User
-  Future<bool> reauthenticateUser(String password) async {
-    try {
-      _setLoading(true);
-      _setError(null);
-
-      if (_user?.email != null) {
-        AuthCredential credential = EmailAuthProvider.credential(
-          email: _user!.email!,
-          password: password,
-        );
-        await _user?.reauthenticateWithCredential(credential);
-        _setLoading(false);
-        return true;
-      }
-      return false;
-    } on FirebaseAuthException catch (e) {
-      _setError(_getFirebaseErrorMessage(e));
-      _setLoading(false);
-      return false;
-    } catch (e) {
-      _setError('Failed to reauthenticate. Please try again.');
-      _setLoading(false);
-      return false;
-    }
-  }
-
-  // Get Firebase Error Message
   String _getFirebaseErrorMessage(FirebaseAuthException e) {
     switch (e.code) {
       case 'weak-password':

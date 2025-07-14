@@ -8,6 +8,7 @@ class RouteName {
   static const String emailVerificationScreen = '/emailVerificationScreen';
   static const String emailVerificationScreen1 = '/emailVerificationScreen1';
   static const String searchScreen = '/searchScreen';
+  static const String wishlistScreen = '/wishlistScreen';
 
 
 

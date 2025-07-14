@@ -23,6 +23,7 @@ dependencies:
   firebase_database: ^11.3.9
   shared_preferences: ^2.5.3
   provider: ^6.1.5
+  font_awesome_flutter: ^10.8.0
 
 
 dev_dependencies:
@@ -36,6 +37,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/fonts/roboto/
 
   fonts:
     - family: Roboto

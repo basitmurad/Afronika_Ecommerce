@@ -9,7 +9,8 @@ import 'package:flutter/material.dart';
 import '../NavigationMenu.dart';
 import '../features/EmailVerificationScreen1.dart';
 import '../features/auth/EmailVerificationScreen.dart';
-import '../features/dashborad/home/search/search_screen.dart';
+import '../features/dashborad/search/search_screen.dart';
+import '../features/dashborad/wishtlist/wishlist_screen.dart';
 
 // note: some routes are marks as pd [ path to defined ],
 // theses routes are set to login screen for default
@@ -27,6 +28,8 @@ class Routes {
         return MaterialPageRoute(builder: (context) => SignupScreen());
       case RouteName.forgotPasScreen:
         return MaterialPageRoute(builder: (context) => ForgotPasScreen());
+        case RouteName.wishlistScreen:
+        return MaterialPageRoute(builder: (context) => WishlistScreen());
       case RouteName.navigationMenu:
         return MaterialPageRoute(builder: (context) => NavigationMenu());
         case RouteName.searchScreen:

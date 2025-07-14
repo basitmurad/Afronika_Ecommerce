@@ -5,6 +5,7 @@ import 'package:afronika/utils/constant/app_test_style.dart';
 import 'package:afronika/utils/constant/image_strings.dart';
 import 'package:afronika/utils/device/device_utility.dart';
 import 'package:flutter/material.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../../utils/constant/colors.dart';
@@ -40,30 +41,47 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: isDark ? Colors.black : Colors.white,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: AppBar(
-          backgroundColor: isDark ? Colors.black : Colors.white,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () {
-              _scaffoldKey.currentState?.openDrawer();
-            },
+        child: Material(
+          color: isDark ? Colors.black : Colors.white,
+          elevation: 0, // 👈 No shadow
+          child: SafeArea(
+            child: Row(
+              children: [
+                IconButton(
+                  icon: Image.asset(
+                    'assets/images/nav.png', // 👈 Replace with your own asset path
+                    height: 24,
+                    width: 24,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                  onPressed: () {
+                    _scaffoldKey.currentState?.openDrawer();
+                  },
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: Image.asset(
+                    GImagePath.search,
+                    height: 22,
+                    width: 22,
+                  ),
+                  onPressed: () {
+                    Navigator.pushNamed(context, RouteName.searchScreen);
+                  },
+                ),
+                IconButton(
+                  icon: Image.asset(
+                    GImagePath.heart,
+                    height: 22,
+                    width: 22,
+                  ),
+                  onPressed: () {
+                    Navigator.pushNamed(context, RouteName.wishlistScreen);
+                  },
+                ),
+              ],
+            ),
           ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.search),
-              onPressed: () {
-                Navigator.pushNamed(context, RouteName.searchScreen);
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.favorite_border),
-              onPressed: () {
-                // Navigate to wishlist
-              },
-            ),
-            const SizedBox(width: 8),
-          ],
         ),
       ),
       drawer: CustomNavigationDrawer(isDark: isDark),
@@ -181,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildProductSection(bool isDark) {
     final List<Map<String, String>> products = [
       {
-        'image': GImagePath.image1,
+        'image': GImagePath.image2,
         'title': 'Casual Dress',
         'price': '394',
       },

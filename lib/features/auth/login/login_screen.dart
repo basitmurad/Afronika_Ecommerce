@@ -272,6 +272,19 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ],
                       ),
+                      SizedBox(height: screenHeight * 0.03),
+
+                      AButton(
+                        text: 'Continue as Guest'
+,                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        textColor: isDark ? Colors.white : Colors.black,
+                        buttonType: AButtonType.outlined,
+                        onPressed: (){
+                       Navigator.pushNamed(context,  RouteName.navigationMenu);
+
+                        },
+                      ),
 
                       // Bottom spacing for scroll comfort
                       SizedBox(height: screenHeight * 0.03),

@@ -4,6 +4,7 @@ import 'package:afronika/utils/constant/image_strings.dart';
 import 'package:afronika/utils/device/device_utility.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../../../utils/constant/colors.dart';
 
@@ -23,7 +24,7 @@ class _SearchScreenState extends State<SearchScreen> {
     {
       'title': 'Casual Dress',
       'price': '394',
-      'image': 'GImagePath.image1',
+      'image': GImagePath.image1,
       'category': 'Dresses',
       'isPopular': true,
     },
@@ -341,7 +342,7 @@ class _SearchScreenState extends State<SearchScreen> {
         backgroundColor: isDark ? Colors.black : Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(

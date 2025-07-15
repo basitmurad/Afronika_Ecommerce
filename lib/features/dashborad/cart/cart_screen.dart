@@ -1,7 +1,11 @@
+import 'package:afronika/utils/constant/image_strings.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:afronika/utils/constant/colors.dart';
+import '../../../common/cartCard.dart';
 import '../../../utils/constant/app_test_style.dart';
+import '../../models/CartItem.dart';
+import '../checkout/checkout_screen.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -15,21 +19,21 @@ class _CartScreenState extends State<CartScreen> {
   List<CartItem> cartItems = [
     CartItem(
       id: '1',
-      imagePath: 'assets/images/product1.png',
+      imagePath: GImagePath.image1,
       title: 'African Print Shirt',
       price: '\$29.99',
       quantity: 2,
     ),
     CartItem(
       id: '2',
-      imagePath: 'assets/images/product2.png',
+      imagePath: GImagePath.image1,
       title: 'Traditional Dashiki',
       price: '\$45.99',
       quantity: 1,
     ),
     CartItem(
       id: '3',
-      imagePath: 'assets/images/product3.png',
+      imagePath: GImagePath.image1,
       title: 'Ankara Dress',
       price: '\$55.99',
       quantity: 3,
@@ -327,16 +331,17 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
-  void _processOrder(List<CartItem> items) {
-    // Here you would typically process the order
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Order placed successfully!'),
-        backgroundColor: Colors.green[400],
-        duration: const Duration(seconds: 3),
+  Future<void> _processOrder(List<CartItem> items) async {
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PaymentMethodScreen(
+          totalAmount: 123,
+          cartItems: items, // Pass cart items for reference
+        ),
       ),
     );
-
     // Remove ordered items from cart
     setState(() {
       for (var item in items) {
@@ -346,188 +351,4 @@ class _CartScreenState extends State<CartScreen> {
   }
 }
 
-// CartItem model class
-class CartItem {
-  final String id;
-  final String imagePath;
-  final String title;
-  final String price;
-  int quantity;
 
-  CartItem({
-    required this.id,
-    required this.imagePath,
-    required this.title,
-    required this.price,
-    required this.quantity,
-  });
-}
-
-// CartCard widget (include this in the same file or import it)
-class CartCard extends StatelessWidget {
-  final String imagePath;
-  final String title;
-  final String price;
-  final bool isDark;
-  final int quantity;
-
-  final VoidCallback onDelete;
-  final VoidCallback onIncreaseQuantity;
-  final VoidCallback onDecreaseQuantity;
-  final VoidCallback onOrder;
-
-  const CartCard({
-    super.key,
-    required this.imagePath,
-    required this.title,
-    required this.price,
-    required this.isDark,
-    required this.quantity,
-    required this.onDelete,
-    required this.onIncreaseQuantity,
-    required this.onDecreaseQuantity,
-    required this.onOrder,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      color: isDark ? Colors.grey[900] : Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 4,
-      margin: const EdgeInsets.only(bottom: 16.0),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image(
-                height: 170,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                image: AssetImage(imagePath),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Title + Price Row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: AappTextStyle.roboto(
-                      color: isDark ? Colors.white : Colors.black,
-                      fontSize: 16.0,
-                      weight: FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  price,
-                  style: AappTextStyle.roboto(
-                    color: isDark ? AColors.primary : Colors.black,
-                    fontSize: 14.0,
-                    weight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            // Quantity Controls and Delete Button
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Quantity Controls
-                Row(
-                  children: [
-                    // Decrease Quantity Button
-                    IconButton(
-                      onPressed: quantity > 1 ? onDecreaseQuantity : null,
-                      icon: Icon(
-                        Icons.remove_circle_outline,
-                        color: quantity > 1
-                            ? (isDark ? Colors.white : Colors.black54)
-                            : Colors.grey[400],
-                      ),
-                      tooltip: 'Decrease quantity',
-                    ),
-
-                    // Quantity Display
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        quantity.toString(),
-                        style: AappTextStyle.roboto(
-                          color: isDark ? Colors.white : Colors.black,
-                          fontSize: 16.0,
-                          weight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-
-                    // Increase Quantity Button
-                    IconButton(
-                      onPressed: onIncreaseQuantity,
-                      icon: Icon(
-                        Icons.add_circle_outline,
-                        color: isDark ? Colors.white : Colors.black54,
-                      ),
-                      tooltip: 'Increase quantity',
-                    ),
-                  ],
-                ),
-
-                // Delete Button
-                IconButton(
-                  onPressed: onDelete,
-                  icon: Icon(Icons.delete_outline_rounded, color: Colors.red[400]),
-                  tooltip: 'Remove from Cart',
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            // Order Button
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: AColors.primary,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                onPressed: onOrder,
-                child: Text(
-                  'Order Now',
-                  style: AappTextStyle.roboto(
-                    color: Colors.white,
-                    fontSize: 14.0,
-                    weight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

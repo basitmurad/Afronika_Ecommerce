@@ -107,11 +107,20 @@
 // }
 //
 
+import 'package:afronika/features/auth/splash/splash_screen.dart';
 import 'package:afronika/webview/AfronikaWebView.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Import this
 import 'package:webview_flutter/webview_flutter.dart';
 
 void main() {
+  // Set the status bar to white
+  SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+    statusBarColor: Colors.white, // Background color of status bar
+    statusBarIconBrightness: Brightness.dark, // Dark icons for white background
+    statusBarBrightness: Brightness.light, // For iOS
+  ));
+
   runApp(const MyApp());
 }
 
@@ -122,10 +131,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Afronika WebView',
-      home: const AfronikaWebView(),
+      home: SplashScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
 }
+
 
 

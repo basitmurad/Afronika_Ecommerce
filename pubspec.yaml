@@ -33,8 +33,6 @@ dependencies:
   webview_flutter_wkwebview: ^3.22.1
   flutter_native_splash: ^2.4.6
 
-
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -55,14 +53,16 @@ flutter:
         - asset: assets/fonts/roboto/Roboto-Bold.ttf
           weight: 700
 
-
-
+# ADD THIS SECTION HERE (after the flutter section)
 flutter_native_splash:
-  color: "#ffffff"          # Background color
-  image: assets/images/applogo.png    # Your logo image
-  branding: assets/images/applogo.png # Optional branding image
-  color_dark: "#000000"     # Optional dark mode color
+  color: "#ffffff"  # Background color (white)
+  image: assets/images/applogo.png  # Your app logo
+
+  # Optional: Dark mode support
+  color_dark: "#ffffff"  # Keep white background for dark mode too
   image_dark: assets/images/applogo.png
-  android: true
-  ios: true
-  web: false
+
+  # Android 12+ support
+  android_12:
+    image: assets/images/applogo.png
+    color: "#ffffff"  # White background for Android 12+

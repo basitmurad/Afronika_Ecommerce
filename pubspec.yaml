@@ -31,7 +31,7 @@ dependencies:
   flutter_inappwebview: ^6.1.5
   webview_flutter_android: ^4.8.2
   webview_flutter_wkwebview: ^3.22.1
-  flutter_web_auth: ^0.6.0
+  flutter_native_splash: ^2.4.6
 
 
 
@@ -54,3 +54,15 @@ flutter:
         - asset: assets/fonts/roboto/Roboto-Regular.ttf
         - asset: assets/fonts/roboto/Roboto-Bold.ttf
           weight: 700
+
+
+
+flutter_native_splash:
+  color: "#ffffff"          # Background color
+  image: assets/images/applogo.png    # Your logo image
+  branding: assets/images/applogo.png # Optional branding image
+  color_dark: "#000000"     # Optional dark mode color
+  image_dark: assets/images/applogo.png
+  android: true
+  ios: true
+  web: false

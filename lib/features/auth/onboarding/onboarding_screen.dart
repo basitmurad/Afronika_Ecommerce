@@ -22,19 +22,54 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<OnboardingPage> _pages = [
     OnboardingPage(
-      title: AText.oBorDing1Title,
-      description: AText.oBorDing1Sub,
+      title: AText.oBording1Title,
+      description: AText.oBording1SubTitle,
       image: GImagePath.image1,
     ),
     OnboardingPage(
       title: AText.oBorDing2Title,
-      description: AText.oBorDing2Sub,
+      description: AText.oBording2SubTitle,
       image: GImagePath.image2,
     ),
     OnboardingPage(
       title: AText.oBorDing3Title,
-      description: AText.oBorDing3Sub,
+      description: AText.oBording3SubTitle,
       image: GImagePath.image3,
+    ),
+    OnboardingPage(
+      title: AText.oBording4Title,
+      description: AText.oBording4SubTitle,
+      image: GImagePath.image4,
+    ),
+    OnboardingPage(
+      title: AText.oBording5Title,
+      description: AText.oBording5SubTitle,
+      image: GImagePath.image5,
+    ),
+    // OnboardingPage(
+    //   title: AText.oBording6Title,
+    //   description: AText.oBording6SubTitle,
+    //   image: GImagePath.image6,
+    // ),
+    OnboardingPage(
+      title: AText.oBording7Title,
+      description: AText.oBording7SubTitle,
+      image: GImagePath.image7,
+    ),
+    OnboardingPage(
+      title: AText.oBording8Title,
+      description: AText.oBording8SubTitle,
+      image: GImagePath.image8,
+    ),
+    OnboardingPage(
+      title: AText.oBording9Title,
+      description: AText.oBording9SubTitle,
+      image: GImagePath.image11,
+    ),
+    OnboardingPage(
+      title: AText.oBording10Title,
+      description: AText.oBording10SubTitle,
+      image: GImagePath.image12,
     ),
   ];
 

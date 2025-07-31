@@ -48,7 +48,7 @@ class AText {
 
 // Onboarding Subtitles
   static String oBording1SubTitle = "Experience seamless e-commerce right from your smartphone.";
-  static String oBording2SubTitle = "Browse, buy, and manage your orders with ease on your laptop.";
+  static String oBording2SubTitle = "Shop all kinds of laptops at affordable prices and manage your orders with ease.";
   static String oBording3SubTitle = "Enjoy smooth performance and elegant design on your Mac.";
   static String oBording4SubTitle = "Fast, responsive, and built for iOS — shopping made delightful.";
   static String oBording5SubTitle = "Enjoy a customized view for your device."; // Placeholder

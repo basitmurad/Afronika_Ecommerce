@@ -35,29 +35,29 @@ class AText {
 
 
 // Onboarding Titles
-  static String oBording1Title = "Shop on the Go";
-  static String oBording2Title = "Your Store, Anywhere";
-  static String oBording3Title = "Sleek Shopping Experience";
-  static String oBording4Title = "Optimized for iPhone";
-  static String oBording5Title = "Tailored Shopping Interface"; // Placeholder – clarify Image 5
-  static String oBording6Title = "Explore More Devices"; // Optional
-  static String oBording7Title = "Seamless Cross-Platform"; // Optional
-  static String oBording8Title = "Flexible Shopping";
-  static String oBording9Title = "Desktop Power";
-  static String oBording10Title = "Clear, Crisp Views";
+// Onboarding Titles
+  static String oBording1Title = "Buy Products On the Go";
+  static String oBording2Title = "Laptops & Tech for Sale";
+  static String oBording3Title = "Shop Mac Accessories & More";
+  static String oBording4Title = "Shop Built for Best Mobile Experience";
+  static String oBording5Title = "Personalized Product Listings";
+  static String oBording6Title = "Buy From Any Device";
+  static String oBording7Title = "Sell & Buy Across Platforms";
+  static String oBording8Title = "Shop Smarter on Foldables";
+  static String oBording9Title = "Affordable Desktops for Sale";
+  static String oBording10Title = "See Products in Stunning Detail";
 
 // Onboarding Subtitles
-  static String oBording1SubTitle = "Experience seamless e-commerce right from your smartphone.";
-  static String oBording2SubTitle = "Shop all kinds of laptops at affordable prices and manage your orders with ease.";
-  static String oBording3SubTitle = "Enjoy smooth performance and elegant design on your Mac.";
-  static String oBording4SubTitle = "Fast, responsive, and built for iOS — shopping made delightful.";
-  static String oBording5SubTitle = "Enjoy a customized view for your device."; // Placeholder
-  static String oBording6SubTitle = "Connect and shop across various platforms."; // Optional
-  static String oBording7SubTitle = "Your store, synced and accessible anywhere."; // Optional
-  static String oBording8SubTitle = "Designed for foldables — multitask while you browse and shop.";
-  static String oBording9SubTitle = "Take full control with a powerful desktop e-commerce experience.";
-  static String oBording10SubTitle = "Shop in stunning detail on high-resolution screens.";
-
+  static String oBording1SubTitle = "Shop and purchase top-selling items directly from your smartphone — fast and secure.";
+  static String oBording2SubTitle = "Explore and buy a wide range of laptops, accessories, and gadgets at unbeatable prices.";
+  static String oBording3SubTitle = "Find and purchase premium Apple-compatible products with a sleek shopping experience.";
+  static String oBording4SubTitle = "Buy electronics and essentials easily with a smooth, mobile-optimized interface.";
+  static String oBording5SubTitle = "See product recommendations and offers tailored for your device and preferences.";
+  static String oBording6SubTitle = "Start shopping on mobile and complete your purchase on desktop or tablet — fully synced.";
+  static String oBording7SubTitle = "Seamless experience whether you're browsing or buying — anytime, anywhere.";
+  static String oBording8SubTitle = "Enjoy a flexible interface to browse and purchase products while multitasking.";
+  static String oBording9SubTitle = "Explore and buy high-performance desktop computers at great prices — perfect for work, gaming, or home use";
+  static String oBording10SubTitle = "Browse and buy with confidence — crisp, clear images and detailed product views.";
 
 
 }

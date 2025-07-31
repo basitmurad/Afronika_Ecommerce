@@ -97,7 +97,7 @@ class AColors {
   static const Color warning100 = Color(0xFFFEF0C7);
   static const Color warning200 = Color(0xFFFEDF89);
   static const Color warning300 = Color(0xFFFEC84B);
-  static const Color warning400 = Color(0xFFFDB022);
+  static const Color warning400 =  Color(0xFFFDB022);
   static const Color warning500 = Color(0xFFF79009); // Primary warning
   static const Color warning600 = Color(0xFFDC6803);
   static const Color warning700 = Color(0xFFB54708);

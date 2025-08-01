@@ -32,6 +32,7 @@ dependencies:
   webview_flutter_android: ^4.8.2
   webview_flutter_wkwebview: ^3.22.1
   flutter_native_splash: ^2.4.6
+  flutter_launcher_icons: ^0.14.4
 
 dev_dependencies:
   flutter_test:
@@ -54,6 +55,10 @@ flutter:
           weight: 700
 
 # ADD THIS SECTION HERE (after the flutter section)
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/logo.png"
 flutter_native_splash:
   color: "#ffffff"  # Background color (white)
   image: assets/images/applogo.png  # Your app logo

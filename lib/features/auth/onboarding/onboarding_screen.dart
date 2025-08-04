@@ -27,12 +27,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       image: GImagePath.image1,
     ),
     OnboardingPage(
-      title: AText.oBorDing2Title,
+      title: AText.oBording2Title,
       description: AText.oBording2SubTitle,
       image: GImagePath.image2,
     ),
     OnboardingPage(
-      title: AText.oBorDing3Title,
+      title: AText.oBording3Title,
       description: AText.oBording3SubTitle,
       image: GImagePath.image3,
     ),
@@ -46,11 +46,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       description: AText.oBording5SubTitle,
       image: GImagePath.image5,
     ),
-    // OnboardingPage(
-    //   title: AText.oBording6Title,
-    //   description: AText.oBording6SubTitle,
-    //   image: GImagePath.image6,
-    // ),
+
     OnboardingPage(
       title: AText.oBording7Title,
       description: AText.oBording7SubTitle,

@@ -1,4 +1,3 @@
-import 'package:afronika/utils/constant/sizes.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../utils/constant/app_test_style.dart';
@@ -37,7 +36,7 @@ class OnboardingPageWidget extends StatelessWidget {
           child: Image.asset(page.image,fit: BoxFit.fill,),
         ),
 
-        SizedBox(height: ASizes.spaceBtwSections),
+        SizedBox(height:32),
         Text(
           page.title,
           style: AappTextStyle.roboto(
@@ -47,7 +46,7 @@ class OnboardingPageWidget extends StatelessWidget {
           ),
           textAlign: TextAlign.center,
         ),
-        SizedBox(height: ASizes.spaceBtwSections -20),
+        SizedBox(height: 32 -20),
         Text(
           page.description,
           textAlign: TextAlign.center,

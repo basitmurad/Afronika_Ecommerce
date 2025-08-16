@@ -1,4 +1,4 @@
-package com.example.afronika
+package com.benjamen.afronika
 
 import io.flutter.embedding.android.FlutterActivity
 

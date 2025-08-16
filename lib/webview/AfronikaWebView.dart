@@ -1,396 +1,889 @@
-import 'package:afronika/webview/UrlType.dart' show UrlLauncherHelper;
+import 'package:afronika/webview/UrlLauncherHelper.dart';
+import 'package:afronika/webview/ChromeTabHelper.dart'; // Add this import
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
+import 'dart:io';
 
 class AfronikaBrowserApp extends StatefulWidget {
   const AfronikaBrowserApp({super.key});
 
   @override
-  State<AfronikaBrowserApp> createState() => _AfronikaBrowserAppScreenState();
+  _AfronikaBrowserAppState createState() => _AfronikaBrowserAppState();
 }
 
-class _AfronikaBrowserAppScreenState extends State<AfronikaBrowserApp>
-    with TickerProviderStateMixin {
-
-  // WebView Controller
+class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> {
   late WebViewController webViewController;
-
-  // State variables
   String currentUrl = "https://www.afronika.com/";
-  String homeUrl = "https://www.afronika.com/";
   bool isLoading = true;
   int loadingProgress = 0;
   bool isRefreshing = false;
-  bool canGoBack = false;
-  bool canGoForward = false;
+  bool hasError = false;
+  String errorMessage = "";
 
-  // Track navigation history manually
-  List<String> navigationHistory = [];
-  int currentHistoryIndex = -1;
+  String get injectedJavaScript => '''
+    (function() {
+        'use strict';
 
-  // Animation controllers
-  late AnimationController _refreshAnimationController;
-  late AnimationController _logoAnimationController;
+        let bridgeInitialized = false;
 
-  // Animations
-  late Animation<double> _refreshRotation;
-  late Animation<double> _logoScale;
+        function createCustomLogo() {
+            // Create the custom logo HTML with colors matching Flutter widget
+            const logoHTML = `
+                <div id="custom-afronika-logo" style="
+                    display: inline-block;
+                    padding: 10px 20px;
+                    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                    font-size: 28px;
+                    font-weight: bold;
+                    line-height: 1;
+                ">
+                    <span style="color: #F44336;">Afr</span><span style="color: #000000;">o</span><span style="color: #FF9800;">n</span><span style="color: #00BCD4;">ika</span>
+                </div>
+                <style>
+                    #custom-afronika-logo:hover {
+                        transform: scale(1.05);
+                        transition: transform 0.2s ease;
+                    }
+
+                    /* Responsive sizing */
+                    @media (max-width: 768px) {
+                        #custom-afronika-logo {
+                            font-size: 24px !important;
+                            padding: 8px 16px !important;
+                        }
+                    }
+                    @media (max-width: 480px) {
+                        #custom-afronika-logo {
+                            font-size: 20px !important;
+                            padding: 6px 12px !important;
+                        }
+                    }
+                </style>
+            `;
+            return logoHTML;
+        }
+
+        function replaceLogos() {
+            // Logo selectors to find and replace
+            const logoSelectors = [
+                '[data-zs-logo]',
+                '[data-zs-logo-container]',
+                '.theme-logo-parent',
+                '.theme-branding-info',
+                '[data-zs-branding]',
+                '.logo',
+                '.brand-logo',
+                '.site-logo',
+                'img[alt*="logo"]',
+                'img[src*="logo"]'
+            ];
+
+            logoSelectors.forEach(selector => {
+                try {
+                    const elements = document.querySelectorAll(selector);
+                    elements.forEach(el => {
+                        if (el && !el.querySelector('#custom-afronika-logo')) {
+                            // Instead of hiding, replace with custom logo
+                            const customLogo = createCustomLogo();
+
+                            // If it's an image, replace it
+                            if (el.tagName === 'IMG') {
+                                el.outerHTML = customLogo;
+                            } else {
+                                // If it's a container, replace its content
+                                el.innerHTML = customLogo;
+                                el.style.display = 'block';
+                            }
+                        }
+                    });
+                } catch(e) {
+                    console.log('Error replacing logo:', e);
+                }
+            });
+
+            // Also check for header areas where logo might be
+            try {
+                const headers = document.querySelectorAll('header, .header, .top-bar, .navbar');
+                headers.forEach(header => {
+                    const logoElements = header.querySelectorAll('img, .logo, [class*="logo"]');
+                    logoElements.forEach(logo => {
+                        if (logo && !logo.querySelector('#custom-afronika-logo')) {
+                            const parent = logo.parentElement;
+                            if (parent && !parent.querySelector('#custom-afronika-logo')) {
+                                logo.outerHTML = createCustomLogo();
+                            }
+                        }
+                    });
+                });
+            } catch(e) {
+                console.log('Error in header logo replacement:', e);
+            }
+        }
+
+        function changeBackgroundColor() {
+            // Change body background to white
+            try {
+                document.body.style.backgroundColor = 'white';
+                document.documentElement.style.backgroundColor = 'white';
+
+                // Also target common container elements
+                const containers = document.querySelectorAll('header, .header, .app-bar, .top-bar, nav');
+                containers.forEach(container => {
+                    if (container) {
+                        container.style.backgroundColor = 'white';
+                    }
+                });
+            } catch(e) {}
+        }
+
+        function repositionChatIcon() {
+            // Find chat widget elements
+            const chatSelectors = [
+                '.zsiq_flt_rel',
+                '#zsiq_float',
+                '.zsiq_float',
+                '[id*="zsiq"]',
+                '.siqicon',
+                '.siqico-chat'
+            ];
+
+            chatSelectors.forEach(selector => {
+                try {
+                    const elements = document.querySelectorAll(selector);
+                    elements.forEach(el => {
+                        if (el && el.style) {
+                            // Position to center-left
+                            el.style.position = 'fixed';
+                            el.style.left = '20px';
+                            el.style.top = '50%';
+                            el.style.transform = 'translateY(-50%)';
+                            el.style.right = 'auto';
+                            el.style.bottom = 'auto';
+                            el.style.zIndex = '9999';
+                        }
+                    });
+                } catch(e) {}
+            });
+
+            // Also target parent containers
+            try {
+                const chatWidget = document.querySelector('.zsiq_flt_rel');
+                if (chatWidget) {
+                    chatWidget.style.cssText = `
+                        position: fixed !important;
+                        left: 20px !important;
+                        top: 50% !important;
+                        transform: translateY(-50%) !important;
+                        right: auto !important;
+                        bottom: auto !important;
+                        z-index: 9999 !important;
+                    `;
+                }
+            } catch(e) {}
+        }
+
+        // Add click event handling for phone, email, social media, and Google auth links
+        function handleExternalLinks() {
+            try {
+                // Remove existing event listeners to avoid duplicates
+                document.removeEventListener('click', globalClickHandler);
+
+                // Add global click handler
+                document.addEventListener('click', globalClickHandler, true);
+
+            } catch(e) {
+                console.log('Error handling external links:', e);
+            }
+        }
+
+        function globalClickHandler(e) {
+            try {
+                let target = e.target;
+
+                // Traverse up the DOM to find an anchor tag or button
+                while (target && target.tagName !== 'A' && target.tagName !== 'BUTTON') {
+                    target = target.parentElement;
+                }
+
+                if (target && (target.tagName === 'A' || target.tagName === 'BUTTON')) {
+                    const href = target.getAttribute('href') || target.getAttribute('data-href') || target.onclick;
+                    const buttonText = target.textContent || target.innerText || '';
+                    const buttonClass = target.className || '';
+                    const buttonId = target.id || '';
+
+                    // Check for Google Sign-In buttons (various patterns)
+                    const isGoogleSignIn = 
+                        buttonText.toLowerCase().includes('sign in with google') ||
+                        buttonText.toLowerCase().includes('continue with google') ||
+                        buttonText.toLowerCase().includes('google sign in') ||
+                        buttonText.toLowerCase().includes('login with google') ||
+                        buttonClass.includes('google') ||
+                        buttonId.includes('google') ||
+                        (href && (
+                            href.includes('accounts.google.com') ||
+                            href.includes('oauth.google.com') ||
+                            href.includes('googleapis.com/oauth')
+                        ));
+
+                    if (isGoogleSignIn) {
+                        console.log('Intercepting Google Sign-In:', href || buttonText);
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        const messageData = {
+                            type: 'google_signin',
+                            url: href || window.location.href,
+                            buttonText: buttonText,
+                            buttonClass: buttonClass,
+                            buttonId: buttonId
+                        };
+
+                        console.log('Sending Google Sign-In message to Flutter:', JSON.stringify(messageData));
+
+                        try {
+                            window.postMessage(JSON.stringify(messageData), '*');
+
+                            if (window.Flutter && window.Flutter.postMessage) {
+                                window.Flutter.postMessage(JSON.stringify(messageData));
+                            }
+
+                            window.dispatchEvent(new CustomEvent('flutterMessage', {
+                                detail: messageData
+                            }));
+
+                        } catch(err) {
+                            console.log('Error sending Google Sign-In message:', err);
+                        }
+
+                        return false;
+                    }
+
+                    if (href) {
+                        // Handle Facebook links
+                        if (href.includes('facebook.com') || href.includes('fb.com') || href.includes('m.facebook.com')) {
+                            console.log('Intercepting Facebook link:', href);
+                            e.preventDefault();
+                            e.stopPropagation();
+
+                            const messageData = {
+                                type: 'external_link',
+                                url: href,
+                                platform: 'facebook'
+                            };
+
+                            console.log('Sending Facebook message to Flutter:', JSON.stringify(messageData));
+
+                            try {
+                                window.postMessage(JSON.stringify(messageData), '*');
+
+                                if (window.Flutter && window.Flutter.postMessage) {
+                                    window.Flutter.postMessage(JSON.stringify(messageData));
+                                }
+
+                                window.dispatchEvent(new CustomEvent('flutterMessage', {
+                                    detail: messageData
+                                }));
+
+                            } catch(err) {
+                                console.log('Error sending Facebook message:', err);
+                            }
+
+                            return false;
+                        }
+
+                        // Handle other social media links
+                        if (href.includes('instagram.com') || href.includes('twitter.com') ||
+                            href.includes('linkedin.com') || href.includes('youtube.com') ||
+                            href.includes('tiktok.com') || href.includes('snapchat.com')) {
+                            console.log('Intercepting social media link:', href);
+                            e.preventDefault();
+                            e.stopPropagation();
+
+                            const messageData = {
+                                type: 'external_link',
+                                url: href,
+                                platform: 'social'
+                            };
+
+                            console.log('Sending social media message to Flutter:', JSON.stringify(messageData));
+
+                            try {
+                                window.postMessage(JSON.stringify(messageData), '*');
+
+                                if (window.Flutter && window.Flutter.postMessage) {
+                                    window.Flutter.postMessage(JSON.stringify(messageData));
+                                }
+
+                                window.dispatchEvent(new CustomEvent('flutterMessage', {
+                                    detail: messageData
+                                }));
+
+                            } catch(err) {
+                                console.log('Error sending social media message:', err);
+                            }
+
+                            return false;
+                        }
+
+                        // Handle mailto and tel links
+                        if (href.startsWith('mailto:') || href.startsWith('tel:')) {
+                            console.log('Intercepting click on:', href);
+                            e.preventDefault();
+                            e.stopPropagation();
+
+                            const messageData = {
+                                type: 'external_link',
+                                url: href
+                            };
+
+                            console.log('Sending message to Flutter:', JSON.stringify(messageData));
+
+                            try {
+                                window.postMessage(JSON.stringify(messageData), '*');
+
+                                if (window.Flutter && window.Flutter.postMessage) {
+                                    window.Flutter.postMessage(JSON.stringify(messageData));
+                                }
+
+                                window.dispatchEvent(new CustomEvent('flutterMessage', {
+                                    detail: messageData
+                                }));
+
+                            } catch(err) {
+                                console.log('Error sending message:', err);
+                            }
+
+                            return false;
+                        }
+                    }
+                }
+            } catch(error) {
+                console.log('Error in click handler:', error);
+            }
+        }
+
+        function initializeBridge() {
+            if (bridgeInitialized) return;
+            bridgeInitialized = true;
+
+            // Replace logos and change background
+            replaceLogos();
+            changeBackgroundColor();
+            repositionChatIcon();
+            handleExternalLinks();
+
+            // Setup observer for dynamic content
+            const observer = new MutationObserver(() => {
+                replaceLogos();
+                changeBackgroundColor();
+                repositionChatIcon();
+                handleExternalLinks();
+            });
+
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+
+            // Repeated operations with reduced delays
+            setTimeout(() => {
+                replaceLogos();
+                repositionChatIcon();
+                handleExternalLinks();
+            }, 300);
+            setTimeout(() => {
+                replaceLogos();
+                repositionChatIcon();
+                handleExternalLinks();
+            }, 600);
+            setTimeout(() => {
+                changeBackgroundColor();
+                repositionChatIcon();
+                handleExternalLinks();
+            }, 400);
+            setTimeout(() => {
+                repositionChatIcon();
+                handleExternalLinks();
+            }, 800);
+
+            // Notify Flutter
+            setTimeout(() => {
+                try {
+                    window.postMessage(JSON.stringify({type: 'bridge_ready'}), '*');
+                } catch(e) {}
+            }, 300);
+        }
+
+        // Initialize when ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeBridge);
+        } else {
+            setTimeout(initializeBridge, 50);
+        }
+
+    })();
+  ''';
 
   @override
   void initState() {
     super.initState();
-    _initializeAnimations();
     _initializeWebView();
-    // Add home URL to history
-    navigationHistory.add(homeUrl);
-    currentHistoryIndex = 0;
-  }
-
-  @override
-  void dispose() {
-    _refreshAnimationController.dispose();
-    _logoAnimationController.dispose();
-    super.dispose();
-  }
-
-  void _initializeAnimations() {
-    // Refresh button animation
-    _refreshAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
-    _refreshRotation = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(CurvedAnimation(
-      parent: _refreshAnimationController,
-      curve: Curves.easeInOut,
-    ));
-
-    // Logo animation
-    _logoAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _logoScale = Tween<double>(
-      begin: 1.0,
-      end: 1.1,
-    ).animate(CurvedAnimation(
-      parent: _logoAnimationController,
-      curve: Curves.elasticOut,
-    ));
   }
 
   void _initializeWebView() {
+    // Initialize the WebView controller
     webViewController = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(Colors.white)
-      ..setNavigationDelegate(_createNavigationDelegate())
-      ..addJavaScriptChannel('Flutter', onMessageReceived: _handleJavaScriptMessage)
-      ..loadRequest(Uri.parse(currentUrl));
-  }
+      ..setBackgroundColor(const Color(0x00000000))
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onProgress: (int progress) {
+            setState(() {
+              loadingProgress = progress;
+              isLoading = progress < 100;
+            });
+          },
+          onPageStarted: (String url) {
+            setState(() {
+              isLoading = true;
+              currentUrl = url;
+              hasError = false;
+              errorMessage = "";
+            });
+          },
+          onPageFinished: (String url) {
+            setState(() {
+              isLoading = false;
+              isRefreshing = false;
+              currentUrl = url;
+            });
 
-  NavigationDelegate _createNavigationDelegate() {
-    return NavigationDelegate(
-      onProgress: (int progress) {
-        setState(() {
-          loadingProgress = progress;
-          isLoading = progress < 100;
-        });
-      },
-      onPageStarted: (String url) {
-        setState(() {
-          isLoading = true;
-          currentUrl = url;
-        });
-        _updateNavigationState();
-      },
-      onPageFinished: (String url) {
-        setState(() {
-          isLoading = false;
-          isRefreshing = false;
-          currentUrl = url;
-        });
+            // Inject JavaScript after page loads
+            Future.delayed(const Duration(milliseconds: 300), () {
+              webViewController.runJavaScript(injectedJavaScript);
+            });
+          },
+          onWebResourceError: (WebResourceError error) {
+            setState(() {
+              isRefreshing = false;
+              hasError = true;
+              errorMessage = _getErrorMessage(error);
+            });
 
-        // Add to navigation history if it's a new URL
-        _addToNavigationHistory(url);
-        _updateNavigationState();
-        _injectCustomJavaScript();
-      },
-      onWebResourceError: (WebResourceError error) {
-        setState(() {
-          isRefreshing = false;
-          isLoading = false;
-        });
-        _showErrorSnackBar('Failed to load page: ${error.description}');
-      },
-      onNavigationRequest: _handleNavigationRequest,
-    );
-  }
+            print('WebView Error: ${error.description}');
+            print('Error Code: ${error.errorCode}');
+            print('Error Type: ${error.errorType}');
 
-  // Add URL to navigation history
-  void _addToNavigationHistory(String url) {
-    // Don't add same URL twice in a row
-    if (navigationHistory.isEmpty || navigationHistory.last != url) {
-      // If we're not at the end of history, remove everything after current position
-      if (currentHistoryIndex < navigationHistory.length - 1) {
-        navigationHistory = navigationHistory.sublist(0, currentHistoryIndex + 1);
-      }
+            // Show error dialog after a brief delay
+            Future.delayed(const Duration(milliseconds: 500), () {
+              _showErrorDialog();
+            });
+          },
+          // Handle navigation requests to intercept external URLs and Google Sign-In
+          onNavigationRequest: (NavigationRequest request) {
+            print('Navigation request: ${request.url}');
 
-      navigationHistory.add(url);
-      currentHistoryIndex = navigationHistory.length - 1;
+            // Check if it's a Google authentication URL
+            if (ChromeTabHelper.isGoogleAuthUrl(request.url)) {
+              print('Intercepting Google Auth URL: ${request.url}');
+              ChromeTabHelper.launchGoogleSignIn(
+                url: request.url,
+                context: context,
+              );
+              return NavigationDecision.prevent;
+            }
 
-      // Limit history size to prevent memory issues
-      if (navigationHistory.length > 50) {
-        navigationHistory.removeAt(0);
-        currentHistoryIndex--;
-      }
+            // Check if it's a mailto or tel link
+            if (UrlLauncherHelper.isExternalUrl(request.url)) {
+              print('Intercepting external URL: ${request.url}');
+              UrlLauncherHelper.handleExternalUrl(request.url, context);
+              return NavigationDecision.prevent;
+            }
 
-      print('📝 Navigation History: ${navigationHistory.length} items, current: $currentHistoryIndex');
-    }
-  }
+            // Check if it's a Facebook link
+            if (UrlLauncherHelper.isFacebookUrl(request.url)) {
+              print('Intercepting Facebook URL: ${request.url}');
+              UrlLauncherHelper.handleFacebookUrl(request.url, context);
+              return NavigationDecision.prevent;
+            }
 
-  NavigationDecision _handleNavigationRequest(NavigationRequest request) {
-    print('🌐 Navigation request: ${request.url}');
+            // Check for other social media links
+            if (UrlLauncherHelper.isSocialMediaUrl(request.url)) {
+              print('Intercepting social media URL: ${request.url}');
+              UrlLauncherHelper.handleSocialMediaUrl(request.url, context);
+              return NavigationDecision.prevent;
+            }
 
-    // Handle external URLs
-    if (_isExternalUrl(request.url)) {
-      print('🔗 Intercepting external URL: ${request.url}');
-      UrlLauncherHelper.launchURL(
-        url: request.url,
-        context: context,
-        showFeedback: true,
+            // Allow normal web navigation for your main domain
+            if (request.url.contains('afronika.com')) {
+              return NavigationDecision.navigate;
+            }
+
+            // For any other external links, open in external browser
+            if (!request.url.startsWith('https://www.afronika.com') &&
+                !request.url.startsWith('https://afronika.com')) {
+              print('Opening external link in browser: ${request.url}');
+              UrlLauncherHelper.handleExternalUrl(request.url, context);
+              return NavigationDecision.prevent;
+            }
+
+            return NavigationDecision.navigate;
+          },
+        ),
+      )
+      ..addJavaScriptChannel(
+        'Flutter',
+        onMessageReceived: (JavaScriptMessage message) {
+          try {
+            print('✓ Received JS message: ${message.message}');
+
+            final data = message.message;
+
+            if (data.contains('hamburger_clicked')) {
+              HapticFeedback.selectionClick();
+              return;
+            }
+
+            // Try to parse as JSON
+            try {
+              final Map<String, dynamic> parsedData =
+              Map<String, dynamic>.from(jsonDecode(data) as Map);
+
+              print('✓ Parsed JSON data: $parsedData');
+
+              // Handle Google Sign-In specifically
+              if (parsedData['type'] == 'google_signin') {
+                final url = parsedData['url'];
+                final buttonText = parsedData['buttonText'] ?? '';
+
+                print('✓ Handling Google Sign-In: $url');
+                print('✓ Button text: $buttonText');
+
+                // Launch Google Sign-In in Chrome Custom Tab
+                ChromeTabHelper.launchGoogleSignIn(
+                  url: url ?? 'https://accounts.google.com/signin',
+                  context: context,
+                );
+                return;
+              }
+
+              if (parsedData['type'] == 'external_link') {
+                final url = parsedData['url'];
+                final platform = parsedData['platform'];
+
+                print('✓ Handling external link: $url (platform: $platform)');
+
+                // Use the helper class to handle different platforms
+                if (platform == 'facebook') {
+                  UrlLauncherHelper.handleFacebookUrl(url, context);
+                } else if (platform == 'social') {
+                  UrlLauncherHelper.handleSocialMediaUrl(url, context);
+                } else {
+                  UrlLauncherHelper.handleExternalUrl(url, context);
+                }
+              }
+            } catch (jsonError) {
+              print('❌ JSON parse error: $jsonError');
+              print('❌ Raw message: $data');
+
+              // Fallback: check if message contains google_signin
+              if (data.contains('google_signin')) {
+                print('✓ Fallback: Launching Google Sign-In');
+                ChromeTabHelper.launchGoogleSignIn(
+                  url: 'https://accounts.google.com/signin',
+                  context: context,
+                );
+                return;
+              }
+
+              // Fallback: check if message contains external_link
+              if (data.contains('external_link')) {
+                // Try to extract URL from the message
+                final regex = RegExp(r'"url":"([^"]+)"');
+                final match = regex.firstMatch(data);
+                if (match != null) {
+                  final url = match.group(1);
+                  print('✓ Extracted URL from fallback: $url');
+                  if (url != null) {
+                    // Check if it's Google auth URL
+                    if (ChromeTabHelper.isGoogleAuthUrl(url)) {
+                      ChromeTabHelper.launchGoogleSignIn(
+                        url: url,
+                        context: context,
+                      );
+                    } else {
+                      // Use helper class with automatic platform detection
+                      UrlLauncherHelper.handleUrl(url, context);
+                    }
+                  }
+                } else {
+                  print('❌ Could not extract URL from message');
+                }
+              }
+            }
+          } catch (e) {
+            print('❌ Error in JS message handler: $e');
+          }
+        },
       );
-      return NavigationDecision.prevent;
-    }
 
-    // Allow navigation within the main domain
-    if (_isInternalUrl(request.url)) {
-      return NavigationDecision.navigate;
-    }
+    // Initial load with connectivity check
+    _loadInitialUrl();
+  }
 
-    // Handle other external links
-    print('🌍 Opening external link: ${request.url}');
-    UrlLauncherHelper.launchURL(
-      url: request.url,
+  // Load initial URL with network connectivity check
+  Future<void> _loadInitialUrl() async {
+    try {
+      // Check internet connectivity
+      final result = await InternetAddress.lookup('google.com');
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        // Internet is available
+        webViewController.loadRequest(Uri.parse(currentUrl));
+      } else {
+        // No internet connection
+        _showNoInternetDialog();
+      }
+    } catch (e) {
+      print('Connectivity check failed: $e');
+      // If connectivity check fails, still try to load but show appropriate error
+      webViewController.loadRequest(Uri.parse(currentUrl));
+    }
+  }
+
+  // Generate user-friendly error messages
+  String _getErrorMessage(WebResourceError error) {
+    switch (error.errorType) {
+      case WebResourceErrorType.hostLookup:
+        return "Unable to find the website. Please check your internet connection.";
+      case WebResourceErrorType.timeout:
+        return "The connection timed out. Please try again.";
+      case WebResourceErrorType.connect:
+        return "Unable to connect to the server. Please check your internet connection.";
+      case WebResourceErrorType.fileNotFound:
+        return "The requested page could not be found.";
+      case WebResourceErrorType.authentication:
+        return "Authentication required to access this page.";
+      case WebResourceErrorType.badUrl:
+        return "Invalid URL. Please check the web address.";
+      case WebResourceErrorType.file:
+        return "File access error occurred.";
+      case WebResourceErrorType.tooManyRequests:
+        return "Too many requests. Please try again later.";
+      case WebResourceErrorType.unknown:
+      default:
+      // Check specific error codes for more details
+        if (error.description.toLowerCase().contains('internet')) {
+          return "No internet connection. Please check your network settings.";
+        } else if (error.description.toLowerCase().contains('server')) {
+          return "Server is currently unavailable. Please try again later.";
+        } else if (error.description.toLowerCase().contains('dns')) {
+          return "DNS lookup failed. Please check your internet connection.";
+        }
+        return "Unable to load the page. Please try again.";
+    }
+  }
+
+  // Show no internet connection dialog
+  void _showNoInternetDialog() {
+    showDialog(
       context: context,
-      showFeedback: true,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.wifi_off, color: Colors.red),
+              SizedBox(width: 8),
+              Text('No Internet Connection'),
+            ],
+          ),
+          content: const Text(
+            'Please check your internet connection and try again.',
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Exit the app or navigate to offline page
+                SystemNavigator.pop();
+              },
+              child: const Text(
+                'Exit',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _retryConnection();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        );
+      },
     );
-    return NavigationDecision.prevent;
   }
 
-  bool _isExternalUrl(String url) {
-    return url.startsWith('mailto:') ||
-        url.startsWith('tel:') ||
-        url.startsWith('sms:') ||
-        url.contains('facebook.com') ||
-        url.contains('fb.com') ||
-        url.contains('m.facebook.com') ||
-        url.contains('instagram.com') ||
-        url.contains('twitter.com') ||
-        url.contains('x.com') ||
-        url.contains('linkedin.com') ||
-        url.contains('youtube.com') ||
-        url.contains('tiktok.com') ||
-        url.contains('snapchat.com') ||
-        url.contains('whatsapp.com');
+  // Show general error dialog
+  void _showErrorDialog() {
+    if (!hasError) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.orange),
+              SizedBox(width: 8),
+              Text('Connection Error'),
+            ],
+          ),
+          content: Text(errorMessage.isNotEmpty ? errorMessage : 'Unable to load the page.'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _refreshPage();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
-  bool _isInternalUrl(String url) {
-    return url.contains('afronika.com');
-  }
-
-  void _handleJavaScriptMessage(JavaScriptMessage message) {
-    try {
-      print('📨 Received JS message: ${message.message}');
-
-      final data = message.message;
-
-      // Handle hamburger menu click
-      if (data.contains('hamburger_clicked')) {
-        HapticFeedback.selectionClick();
-        return;
-      }
-
-      // Handle bridge ready
-      if (data.contains('bridge_ready')) {
-        print('✅ JavaScript bridge initialized');
-        return;
-      }
-
-      // Try to parse as JSON for external links
-      try {
-        final Map<String, dynamic> parsedData =
-        Map<String, dynamic>.from(jsonDecode(data) as Map);
-
-        if (parsedData['type'] == 'external_link') {
-          final url = parsedData['url'];
-          print('🔗 Handling external link from JS: $url');
-
-          UrlLauncherHelper.launchURL(
-            url: url,
-            context: context,
-            showFeedback: true,
-          );
-        }
-      } catch (jsonError) {
-        // Fallback parsing for malformed JSON
-        _handleFallbackParsing(data);
-      }
-    } catch (e) {
-      print('❌ Error in JS message handler: $e');
-    }
-  }
-
-  void _handleFallbackParsing(String data) {
-    if (data.contains('external_link')) {
-      final regex = RegExp(r'"url":"([^"]+)"');
-      final match = regex.firstMatch(data);
-      if (match != null) {
-        final url = match.group(1);
-        if (url != null) {
-          print('🔗 Extracted URL from fallback: $url');
-          UrlLauncherHelper.launchURL(
-            url: url,
-            context: context,
-            showFeedback: true,
-          );
-        }
-      }
-    }
-  }
-
-  void _injectCustomJavaScript() {
-    Future.delayed(const Duration(milliseconds: 300), () {
-      webViewController.runJavaScript(_getInjectedJavaScript());
-    });
-  }
-
-  Future<void> _updateNavigationState() async {
-    try {
-      final backState = await webViewController.canGoBack();
-      final forwardState = await webViewController.canGoForward();
-
-      if (mounted) {
-        setState(() {
-          canGoBack = backState || _canGoBackInHistory();
-          canGoForward = forwardState || _canGoForwardInHistory();
-        });
-      }
-    } catch (e) {
-      print('❌ Error updating navigation state: $e');
-    }
-  }
-
-  // Check if we can go back in our custom history
-  bool _canGoBackInHistory() {
-    return currentHistoryIndex > 0;
-  }
-
-  // Check if we can go forward in our custom history
-  bool _canGoForwardInHistory() {
-    return currentHistoryIndex < navigationHistory.length - 1;
-  }
-
-  // UI Actions
-  void _refreshPage() {
-    if (isRefreshing) return;
-
+  // Retry connection with connectivity check
+  Future<void> _retryConnection() async {
     setState(() {
       isRefreshing = true;
+      hasError = false;
+      errorMessage = "";
     });
 
-    HapticFeedback.lightImpact();
-    _refreshAnimationController.forward().then((_) {
-      _refreshAnimationController.reset();
-    });
-
-    webViewController.reload();
-  }
-
-  Future<void> _goBack() async {
     try {
-      HapticFeedback.selectionClick();
-
-      // First try WebView's built-in back
-      if (await webViewController.canGoBack()) {
-        await webViewController.goBack();
-        await _updateNavigationState();
-        return;
-      }
-
-      // If WebView can't go back, use our custom history
-      if (_canGoBackInHistory()) {
-        currentHistoryIndex--;
-        final previousUrl = navigationHistory[currentHistoryIndex];
-        print('⬅️ Going back to: $previousUrl');
-        await webViewController.loadRequest(Uri.parse(previousUrl));
-        await _updateNavigationState();
+      // Check internet connectivity first
+      final result = await InternetAddress.lookup('google.com');
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        // Internet is available, reload the page
+        HapticFeedback.lightImpact();
+        webViewController.reload();
+      } else {
+        // Still no internet
+        setState(() {
+          isRefreshing = false;
+        });
+        _showNoInternetDialog();
       }
     } catch (e) {
-      print('❌ Error going back: $e');
+      print('Retry connection failed: $e');
+      setState(() {
+        isRefreshing = false;
+      });
+      // Try loading anyway
+      HapticFeedback.lightImpact();
+      webViewController.reload();
     }
   }
 
-  Future<void> _goForward() async {
+  // Refresh function with connectivity check
+  Future<void> _refreshPage() async {
+    setState(() {
+      isRefreshing = true;
+      hasError = false;
+      errorMessage = "";
+    });
+
     try {
-      HapticFeedback.selectionClick();
-
-      // First try WebView's built-in forward
-      if (await webViewController.canGoForward()) {
-        await webViewController.goForward();
-        await _updateNavigationState();
-        return;
-      }
-
-      // If WebView can't go forward, use our custom history
-      if (_canGoForwardInHistory()) {
-        currentHistoryIndex++;
-        final nextUrl = navigationHistory[currentHistoryIndex];
-        print('➡️ Going forward to: $nextUrl');
-        await webViewController.loadRequest(Uri.parse(nextUrl));
-        await _updateNavigationState();
+      // Quick connectivity check
+      final result = await InternetAddress.lookup('google.com').timeout(
+        const Duration(seconds: 3),
+      );
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        HapticFeedback.lightImpact();
+        webViewController.reload();
+      } else {
+        setState(() {
+          isRefreshing = false;
+        });
+        _showNoInternetDialog();
       }
     } catch (e) {
-      print('❌ Error going forward: $e');
+      print('Connectivity check during refresh failed: $e');
+      // Try refreshing anyway
+      HapticFeedback.lightImpact();
+      webViewController.reload();
     }
   }
 
-  void _goHome() {
-    HapticFeedback.mediumImpact();
-    _logoAnimationController.forward().then((_) {
-      _logoAnimationController.reverse();
-    });
-    webViewController.loadRequest(Uri.parse(homeUrl));
-  }
-
-  // FIXED: Better back navigation with custom history
+  // Handle back button press
   Future<bool> _onWillPop() async {
     try {
-      // Check if we can go back (WebView or custom history)
-      if (await webViewController.canGoBack() || _canGoBackInHistory()) {
-        await _goBack();
+      print('🔙 Back button pressed');
+
+      // Check if WebView can go back
+      final canGoBack = await webViewController.canGoBack();
+      print('🔙 Can go back: $canGoBack');
+
+      if (canGoBack) {
+        // Go back in WebView history
+        await webViewController.goBack();
+        print('🔙 Navigated back in WebView');
         return false; // Don't exit the app
       } else {
-        // If we can't go back anywhere, show exit dialog
-        return await _showExitDialog() ?? false;
+        // No more pages to go back to, show exit dialog
+        print('🔙 No more pages, showing exit dialog');
+        final shouldExit = await _showExitDialog();
+        return shouldExit ?? false;
       }
     } catch (e) {
-      print('❌ Error in _onWillPop: $e');
-      return await _showExitDialog() ?? false;
+      print('❌ Error in back button handler: $e');
+      // If there's an error, show exit dialog
+      final shouldExit = await _showExitDialog();
+      return shouldExit ?? false;
     }
   }
 
+  // Improved exit confirmation dialog
   Future<bool?> _showExitDialog() {
     return showDialog<bool>(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: false, // Prevent dismissing by tapping outside
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
         title: const Row(
           children: [
             Icon(Icons.exit_to_app, color: Colors.red),
@@ -398,40 +891,36 @@ class _AfronikaBrowserAppScreenState extends State<AfronikaBrowserApp>
             Text('Exit App'),
           ],
         ),
-        content: const Text('Do you want to exit the Afronika app?'),
+        content: const Text('Are you sure you want to exit Afronika?'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            onPressed: () {
+              Navigator.of(context).pop(false);
+              HapticFeedback.lightImpact();
+            },
+            child: const Text(
+              'Stay',
+              style: TextStyle(color: Colors.teal),
+            ),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () {
+              Navigator.of(context).pop(true);
+              HapticFeedback.mediumImpact();
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             child: const Text('Exit'),
           ),
         ],
-      ),
-    );
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 4),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        action: SnackBarAction(
-          label: 'Retry',
-          textColor: Colors.white,
-          onPressed: _refreshPage,
-        ),
       ),
     );
   }
@@ -441,521 +930,129 @@ class _AfronikaBrowserAppScreenState extends State<AfronikaBrowserApp>
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        backgroundColor: Colors.white,
-        body: Column(
-          children: [
-            // Add navigation bar at the top
-            _buildNavigationBar(),
-            // WebView takes the rest
-            Expanded(child: _buildBody()),
-          ],
-        ),
-        floatingActionButton: Padding(
-          padding: const EdgeInsets.only(bottom: 58.0),
-          child: _buildFloatingActionButton(),
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
-      ),
-    );
-  }
-
-  Widget _buildNavigationBar() {
-    return Container(
-      height: 30,
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child: SafeArea(
-        child: Row(
-          children: [
-            // Back button
-            IconButton(
-              onPressed: canGoBack ? _goBack : null,
-              icon: Icon(
-                Icons.arrow_back_ios,
-                color: canGoBack ? Colors.teal : Colors.grey[400],
-                size: 20,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              // Main WebView - direct implementation for full scrolling
+              Positioned.fill(
+                child: WebViewWidget(controller: webViewController),
               ),
-            ),
-            // Forward button
-            IconButton(
-              onPressed: canGoForward ? _goForward : null,
-              icon: Icon(
-                Icons.arrow_forward_ios,
-                color: canGoForward ? Colors.teal : Colors.grey[400],
-                size: 20,
-              ),
-            ),
-            // URL display
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.public, size: 16, color: Colors.grey[600]),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _getDisplayUrl(currentUrl),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[700],
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // Home button
-            IconButton(
-              onPressed: _goHome,
-              icon: const Icon(Icons.home, color: Colors.teal, size: 24),
-            ),
-            // Options menu
-            IconButton(
-              onPressed: _showOptionsMenu,
-              icon: const Icon(Icons.more_vert, color: Colors.teal, size: 24),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  String _getDisplayUrl(String url) {
-    // Clean up URL for display
-    String displayUrl = url;
-    if (displayUrl.startsWith('https://')) {
-      displayUrl = displayUrl.substring(8);
-    } else if (displayUrl.startsWith('http://')) {
-      displayUrl = displayUrl.substring(7);
-    }
-    if (displayUrl.startsWith('www.')) {
-      displayUrl = displayUrl.substring(4);
-    }
-    return displayUrl;
-  }
-
-  Widget _buildBody() {
-    return Container(
-      color: Colors.white,
-      child: Stack(
-        children: [
-          // Main WebView
-          Positioned.fill(
-            child: WebViewWidget(controller: webViewController),
-          ),
-
-          // Progress indicator
-          if (isLoading)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: LinearProgressIndicator(
-                value: loadingProgress / 100,
-                backgroundColor: Colors.grey[200],
-                valueColor: const AlwaysStoppedAnimation(Colors.teal),
-                minHeight: 3,
-              ),
-            ),
-
-          // Loading overlay for initial load
-          if (isLoading && loadingProgress < 30)
-            Container(
-              color: Colors.white,
-              child: const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation(Colors.teal),
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'Loading Afronika...',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFloatingActionButton() {
-    return AnimatedBuilder(
-      animation: _refreshRotation,
-      builder: (context, child) {
-        return FloatingActionButton(
-          onPressed: isRefreshing ? null : _refreshPage,
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.teal,
-          elevation: 6,
-          child: Transform.rotate(
-            angle: _refreshRotation.value * 2 * 3.14159,
-            child: Icon(
-              isRefreshing ? Icons.hourglass_empty : Icons.refresh,
-              size: 28,
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showOptionsMenu() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            ListTile(
-              leading: const Icon(Icons.home, color: Colors.teal),
-              title: const Text('Home'),
-              onTap: () {
-                Navigator.pop(context);
-                _goHome();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.refresh, color: Colors.teal),
-              title: const Text('Refresh'),
-              onTap: () {
-                Navigator.pop(context);
-                _refreshPage();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.share, color: Colors.teal),
-              title: const Text('Share'),
-              onTap: () {
-                Navigator.pop(context);
-                _shareCurrentPage();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.copy, color: Colors.teal),
-              title: const Text('Copy URL'),
-              onTap: () {
-                Navigator.pop(context);
-                UrlLauncherHelper.copyToClipboard(currentUrl, context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.history, color: Colors.teal),
-              title: const Text('History'),
-              subtitle: Text('${navigationHistory.length} pages visited'),
-              onTap: () {
-                Navigator.pop(context);
-                _showHistoryDialog();
-              },
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showHistoryDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Navigation History'),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 300,
-          child: ListView.builder(
-            itemCount: navigationHistory.length,
-            itemBuilder: (context, index) {
-              final url = navigationHistory[index];
-              final isCurrent = index == currentHistoryIndex;
-              return ListTile(
-                leading: Icon(
-                  isCurrent ? Icons.location_on : Icons.history,
-                  color: isCurrent ? Colors.teal : Colors.grey,
-                  size: 20,
-                ),
-                title: Text(
-                  _getDisplayUrl(url),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                    color: isCurrent ? Colors.teal : Colors.black87,
+              // Progress indicator
+              if (isLoading)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: LinearProgressIndicator(
+                    value: loadingProgress / 100,
+                    backgroundColor: Colors.grey[200],
+                    valueColor: const AlwaysStoppedAnimation(Colors.teal),
+                    minHeight: 3,
                   ),
                 ),
-                onTap: () {
-                  Navigator.pop(context);
-                  currentHistoryIndex = index;
-                  webViewController.loadRequest(Uri.parse(url));
-                },
-              );
-            },
+
+              // Error overlay (optional - shows when there's an error)
+              if (hasError && !isLoading)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.white,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 80,
+                            color: Colors.orange,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Oops! Something went wrong',
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 32),
+                            child: Text(
+                              errorMessage.isNotEmpty ? errorMessage : 'Unable to load the page',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: _refreshPage,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Try Again'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.teal,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+              // Refresh button positioned above bottom navbar on left side
+              Positioned(
+                bottom: 80,
+                left: 16,
+                child: Material(
+                  elevation: 6,
+                  shape: const CircleBorder(),
+                  color: Colors.white,
+                  child: InkWell(
+                    onTap: _refreshPage,
+                    borderRadius: BorderRadius.circular(28),
+                    child: Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: isRefreshing
+                          ? const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation(Colors.teal),
+                        ),
+                      )
+                          : const Icon(
+                        Icons.refresh,
+                        color: Colors.teal,
+                        size: 28,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
       ),
     );
-  }
-
-  void _shareCurrentPage() {
-    UrlLauncherHelper.copyToClipboard(currentUrl, context);
-  }
-
-  String _getInjectedJavaScript() {
-    return '''
-      (function() {
-          'use strict';
-
-          let bridgeInitialized = false;
-
-          function createCustomLogo() {
-              const logoHTML = `
-                  <div id="custom-afronika-logo" style="
-                      display: inline-block;
-                      padding: 10px 20px;
-                      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-                      font-size: 28px;
-                      font-weight: bold;
-                      line-height: 1;
-                  ">
-                      <span style="color: #F44336;">Afr</span><span style="color: #000000;">o</span><span style="color: #FF9800;">n</span><span style="color: #00BCD4;">ika</span>
-                  </div>
-                  <style>
-                      #custom-afronika-logo:hover {
-                          transform: scale(1.05);
-                          transition: transform 0.2s ease;
-                      }
-                      @media (max-width: 768px) {
-                          #custom-afronika-logo {
-                              font-size: 24px !important;
-                              padding: 8px 16px !important;
-                          }
-                      }
-                      @media (max-width: 480px) {
-                          #custom-afronika-logo {
-                              font-size: 20px !important;
-                              padding: 6px 12px !important;
-                          }
-                      }
-                  </style>
-              `;
-              return logoHTML;
-          }
-
-          function replaceLogos() {
-              const logoSelectors = [
-                  '[data-zs-logo]',
-                  '[data-zs-logo-container]',
-                  '.theme-logo-parent',
-                  '.theme-branding-info',
-                  '[data-zs-branding]',
-                  '.logo',
-                  '.brand-logo',
-                  '.site-logo',
-                  'img[alt*="logo"]',
-                  'img[src*="logo"]'
-              ];
-
-              logoSelectors.forEach(selector => {
-                  try {
-                      const elements = document.querySelectorAll(selector);
-                      elements.forEach(el => {
-                          if (el && !el.querySelector('#custom-afronika-logo')) {
-                              const customLogo = createCustomLogo();
-                              if (el.tagName === 'IMG') {
-                                  el.outerHTML = customLogo;
-                              } else {
-                                  el.innerHTML = customLogo;
-                                  el.style.display = 'block';
-                              }
-                          }
-                      });
-                  } catch(e) {
-                      console.log('Error replacing logo:', e);
-                  }
-              });
-
-              try {
-                  const headers = document.querySelectorAll('header, .header, .top-bar, .navbar');
-                  headers.forEach(header => {
-                      const logoElements = header.querySelectorAll('img, .logo, [class*="logo"]');
-                      logoElements.forEach(logo => {
-                          if (logo && !logo.querySelector('#custom-afronika-logo')) {
-                              const parent = logo.parentElement;
-                              if (parent && !parent.querySelector('#custom-afronika-logo')) {
-                                  logo.outerHTML = createCustomLogo();
-                              }
-                          }
-                      });
-                  });
-              } catch(e) {
-                  console.log('Error in header logo replacement:', e);
-              }
-          }
-
-          function changeBackgroundColor() {
-              try {
-                  document.body.style.backgroundColor = 'white';
-                  document.documentElement.style.backgroundColor = 'white';
-                  const containers = document.querySelectorAll('header, .header, .app-bar, .top-bar, nav');
-                  containers.forEach(container => {
-                      if (container) {
-                          container.style.backgroundColor = 'white';
-                      }
-                  });
-              } catch(e) {}
-          }
-
-          function repositionChatIcon() {
-              const chatSelectors = [
-                  '.zsiq_flt_rel',
-                  '#zsiq_float',
-                  '.zsiq_float',
-                  '[id*="zsiq"]',
-                  '.siqicon',
-                  '.siqico-chat'
-              ];
-
-              chatSelectors.forEach(selector => {
-                  try {
-                      const elements = document.querySelectorAll(selector);
-                      elements.forEach(el => {
-                          if (el && el.style) {
-                              el.style.position = 'fixed';
-                              el.style.left = '20px';
-                              el.style.top = '50%';
-                              el.style.transform = 'translateY(-50%)';
-                              el.style.right = 'auto';
-                              el.style.bottom = 'auto';
-                              el.style.zIndex = '9999';
-                          }
-                      });
-                  } catch(e) {}
-              });
-          }
-
-          function handleExternalLinks() {
-              try {
-                  document.removeEventListener('click', globalClickHandler);
-                  document.addEventListener('click', globalClickHandler, true);
-              } catch(e) {
-                  console.log('Error handling external links:', e);
-              }
-          }
-
-          function globalClickHandler(e) {
-              try {
-                  let target = e.target;
-                  while (target && target.tagName !== 'A') {
-                      target = target.parentElement;
-                  }
-
-                  if (target && target.tagName === 'A') {
-                      const href = target.getAttribute('href');
-                      if (href) {
-                          if (href.includes('facebook.com') || href.includes('fb.com') || 
-                              href.includes('instagram.com') || href.includes('twitter.com') ||
-                              href.includes('linkedin.com') || href.includes('youtube.com') ||
-                              href.includes('tiktok.com') || href.startsWith('mailto:') || 
-                              href.startsWith('tel:')) {
-                              
-                              e.preventDefault();
-                              e.stopPropagation();
-
-                              const messageData = {
-                                  type: 'external_link',
-                                  url: href
-                              };
-
-                              try {
-                                  window.postMessage(JSON.stringify(messageData), '*');
-                                  if (window.Flutter && window.Flutter.postMessage) {
-                                      window.Flutter.postMessage(JSON.stringify(messageData));
-                                  }
-                              } catch(err) {
-                                  console.log('Error sending message:', err);
-                              }
-                              return false;
-                          }
-                      }
-                  }
-              } catch(error) {
-                  console.log('Error in click handler:', error);
-              }
-          }
-
-          function initializeBridge() {
-              if (bridgeInitialized) return;
-              bridgeInitialized = true;
-
-              replaceLogos();
-              changeBackgroundColor();
-              repositionChatIcon();
-              handleExternalLinks();
-
-              const observer = new MutationObserver(() => {
-                  replaceLogos();
-                  changeBackgroundColor();
-                  repositionChatIcon();
-                  handleExternalLinks();
-              });
-
-              observer.observe(document.body, {
-                  childList: true,
-                  subtree: true
-              });
-
-              setTimeout(() => {
-                  replaceLogos();
-                  repositionChatIcon();
-                  handleExternalLinks();
-              }, 300);
-
-              setTimeout(() => {
-                  try {
-                      window.postMessage(JSON.stringify({type: 'bridge_ready'}), '*');
-                  } catch(e) {}
-              }, 300);
-          }
-
-          if (document.readyState === 'loading') {
-              document.addEventListener('DOMContentLoaded', initializeBridge);
-          } else {
-              setTimeout(initializeBridge, 50);
-          }
-      })();
-    ''';
   }
 }

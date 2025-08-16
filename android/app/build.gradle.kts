@@ -16,7 +16,7 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.benjamen.afronika"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 35
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -34,9 +34,9 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 23
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        targetSdk = 35
+        versionCode = 2   // ⬅️ bump this number
+        versionName = "1.0.2" // ⬅️ can be anything, but usually incremented
     }
 
     signingConfigs {
@@ -63,6 +63,32 @@ flutter {
 }
 
 dependencies {
-    implementation("com.google.android.play:core:1.10.3")
-    implementation("com.google.android.play:core-ktx:1.8.1")
+    // OPTION 1: Continue with Play Core (Latest versions - what you already have)
+//    implementation("com.google.android.play:core:1.10.3")
+//    implementation("com.google.android.play:core-ktx:1.8.1")
+//
+//    // OPTION 2: Use the new recommended libraries (Replace above with these)
+//    /*
+    // App Updates
+    implementation("com.google.android.play:app-update:2.1.0")
+    implementation("com.google.android.play:app-update-ktx:2.1.0")
+
+    // Feature Delivery
+    implementation("com.google.android.play:feature-delivery:2.1.0")
+    implementation("com.google.android.play:feature-delivery-ktx:2.1.0")
+
+    // In-App Reviews
+    implementation("com.google.android.play:review:2.0.1")
+    implementation("com.google.android.play:review-ktx:2.0.1")
+
+    // Asset Packs
+    implementation("com.google.android.play:asset-delivery:2.2.2")
+    implementation("com.google.android.play:asset-delivery-ktx:2.2.2")
+
+    // Integrity API
+    implementation("com.google.android.play:integrity:1.4.0")
+
+    // Common library for all Play services
+    implementation("com.google.android.gms:play-services-tasks:18.2.0")
+
 }

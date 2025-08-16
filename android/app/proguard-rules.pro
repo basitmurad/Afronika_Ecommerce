@@ -25,6 +25,18 @@
 -keep class io.flutter.embedding.android.** { *; }
 -keep class io.flutter.embedding.engine.** { *; }
 
+# Google Play Core library rules (FIX FOR R8 ERROR)
+-keep class com.google.android.play.core.** { *; }
+-keep interface com.google.android.play.core.** { *; }
+-keep class com.google.android.play.core.splitcompat.** { *; }
+-keep class com.google.android.play.core.splitinstall.** { *; }
+-keep class com.google.android.play.core.tasks.** { *; }
+-dontwarn com.google.android.play.core.**
+
+# Google Play In-App Update library rules
+-keep class com.google.android.play.** { *; }
+-keep interface com.google.android.play.** { *; }
+
 # WebView specific rules
 -keepclassmembers class fqcn.of.javascript.interface.for.webview {
    public *;

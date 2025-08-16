@@ -24,7 +24,7 @@
         android:usesCleartextTraffic="true"
         android:hardwareAccelerated="true"
         android:largeHeap="false"
-        android:vmSafeMode="true"
+        android:vmSafeMode="false"
         >
         <activity
             android:name=".MainActivity"

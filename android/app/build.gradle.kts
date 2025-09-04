@@ -15,8 +15,9 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.benjamen.afronika"
+    namespace = "com.benjamin_pro.afronika_app"
     compileSdk = 35
+    ndkVersion = flutter.ndkVersion
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -29,14 +30,11 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.benjamen.afronika"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 23
+        applicationId = "com.benjamin_pro.afronika_app"
+        minSdkVersion(23)    // ✅ updated for Flutter compatibility
         targetSdk = 35
-        versionCode = 2   // ⬅️ bump this number
-        versionName = "1.0.2" // ⬅️ can be anything, but usually incremented
+        versionCode = 3
+        versionName = "1.0.2"
     }
 
     signingConfigs {
@@ -51,7 +49,10 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
             isMinifyEnabled = true
             isShrinkResources = true
         }
@@ -63,12 +64,6 @@ flutter {
 }
 
 dependencies {
-    // OPTION 1: Continue with Play Core (Latest versions - what you already have)
-//    implementation("com.google.android.play:core:1.10.3")
-//    implementation("com.google.android.play:core-ktx:1.8.1")
-//
-//    // OPTION 2: Use the new recommended libraries (Replace above with these)
-//    /*
     // App Updates
     implementation("com.google.android.play:app-update:2.1.0")
     implementation("com.google.android.play:app-update-ktx:2.1.0")
@@ -90,5 +85,4 @@ dependencies {
 
     // Common library for all Play services
     implementation("com.google.android.gms:play-services-tasks:18.2.0")
-
 }

@@ -1,7 +1,6 @@
 // chrome_tab_helper.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_custom_tabs/flutter_custom_tabs.dart';
-import 'package:url_launcher/url_launcher.dart' hide launchUrl;
 
 class ChromeTabHelper {
 

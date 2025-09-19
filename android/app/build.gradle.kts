@@ -16,7 +16,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.benjamin_pro.afronika_app"
-    compileSdk = 35
+    compileSdk = 36   // ✅ Updated
+
     ndkVersion = flutter.ndkVersion
     ndkVersion = "27.0.12077973"
 
@@ -31,8 +32,8 @@ android {
 
     defaultConfig {
         applicationId = "com.benjamin_pro.afronika_app"
-        minSdkVersion(23)    // ✅ updated for Flutter compatibility
-        targetSdk = 35
+        minSdk = 24       // ✅ Updated (was 23)
+        targetSdk = 36    // ✅ Updated (was 35)
         versionCode = 3
         versionName = "1.0.2"
     }

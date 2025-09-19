@@ -31,6 +31,7 @@ dependencies:
   flutter_launcher_icons: ^0.14.4
   flutter_custom_tabs: ^2.4.0
   change_app_package_name: ^1.5.0
+  app_tracking_transparency: ^2.0.6+1
 
 dev_dependencies:
   flutter_test:
@@ -56,16 +57,17 @@ flutter:
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/images/logo.png"
+  image_path: "assets/images/newlogo.png"
 flutter_native_splash:
   color: "#ffffff"  # Background color (white)
-  image: assets/images/applogo.png  # Your app logo
-
+  image: assets/images/newlogo.png  # Your app logo
+  android_gravity: center
+  ios_content_mode: scaleAspectFit
   # Optional: Dark mode support
   color_dark: "#ffffff"  # Keep white background for dark mode too
-  image_dark: assets/images/applogo.png
+  image_dark: assets/images/newlogo.png
 
   # Android 12+ support
   android_12:
-    image: assets/images/applogo.png
+    image: assets/images/newlogo.png
     color: "#ffffff"  # White background for Android 12+

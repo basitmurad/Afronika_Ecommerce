@@ -47,19 +47,24 @@
 		<true/>
 		<key>UIStatusBarHidden</key>
 		<false/>
-
 		<!-- Add these configurations for URL schemes -->
-        	<key>LSApplicationQueriesSchemes</key>
-        	<array>
-        		<string>mailto</string>
-        		<string>tel</string>
-        		<string>sms</string>
-        	</array>
+		<key>LSApplicationQueriesSchemes</key>
+		<array>
+			<string>mailto</string>
+			<string>tel</string>
+			<string>sms</string>
+		</array>
+		<!-- Allow arbitrary loads for web content -->
+		<key>NSAppTransportSecurity</key>
+		<dict>
+			<key>NSAllowsArbitraryLoads</key>
+			<true/>
 
-        	<!-- Allow arbitrary loads for web content -->
-        	<key>NSAppTransportSecurity</key>
-        	<dict>
-        		<key>NSAllowsArbitraryLoads</key>
-        		<true/>
+
+
+			<key>NSUserTrackingUsageDescription</key>
+            <string>This identifier will be used to deliver personalized ads and improve app experience.</string>
+
+		</dict>
 	</dict>
 </plist>

@@ -34,8 +34,8 @@ android {
         applicationId = "com.benjamin_pro.afronika_app"
         minSdk = 24       // ✅ Updated (was 23)
         targetSdk = 36    // ✅ Updated (was 35)
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 4
+        versionName = "1.0.3"
     }
 
     signingConfigs {

@@ -59,7 +59,7 @@ class AboutAppScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                'Version 1.0.3',
+                'Version 1.0.4',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.teal,

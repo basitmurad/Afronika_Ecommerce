@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:io';
 
+import '../common/MenuBottomSheetWidget.dart';
 import '../features/about/AboutAppScreen.dart';
 import '../features/contact/ContactScreen.dart';
 import '../features/privacy/PrivacyPolicyScreen.dart';
@@ -103,7 +104,7 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
           try {
               document.body.style.backgroundColor = 'white';
               document.documentElement.style.backgroundColor = 'white';
-              
+
               const containers = document.querySelectorAll('header, .header, .app-bar, .top-bar, nav');
               containers.forEach(container => {
                   if (container) {
@@ -159,7 +160,7 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
       function globalClickHandler(e) {
           try {
               let target = e.target;
-              
+
               while (target && target !== document.body && target.tagName !== 'A' && target.tagName !== 'BUTTON') {
                   target = target.parentElement;
               }
@@ -181,12 +182,12 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
                       tiktok: /tiktok\.com/i,
                       snapchat: /snapchat\.com/i
                   };
-                  
+
                   for (const [platform, pattern] of Object.entries(socialPatterns)) {
                       if (pattern.test(href)) {
                           e.preventDefault();
                           e.stopPropagation();
-                          
+
                           sendMessageToFlutter({
                               type: 'external_link',
                               url: href,
@@ -200,7 +201,7 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
                   if (href.startsWith('mailto:') || href.startsWith('tel:')) {
                       e.preventDefault();
                       e.stopPropagation();
-                      
+
                       sendMessageToFlutter({
                           type: 'external_link',
                           url: href
@@ -216,15 +217,15 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
       function sendMessageToFlutter(data) {
           const message = JSON.stringify(data);
           console.log('Sending to Flutter:', message);
-          
+
           try {
               // Try multiple communication methods for better compatibility
               if (window.Flutter && window.Flutter.postMessage) {
                   window.Flutter.postMessage(message);
               }
-              
+
               window.postMessage(message, '*');
-              
+
               window.dispatchEvent(new CustomEvent('flutterMessage', {
                   detail: data
               }));
@@ -279,277 +280,6 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
   })();
 ''';
 
-  // String get injectedJavaScript => '''
-  //   (function() {
-  //       'use strict';
-  //
-  //       let bridgeInitialized = false;
-  //       const cookiesAccepted = $_cookiesAccepted;
-  //
-  //       // Set cookie consent if accepted
-  //       if (cookiesAccepted) {
-  //           try {
-  //               document.cookie = "cookie_consent=accepted; path=/; max-age=31536000";
-  //               localStorage.setItem('cookie_consent', 'true');
-  //           } catch(e) {
-  //               console.log('Error setting cookie consent:', e);
-  //           }
-  //       }
-  //
-  //       function ensureMobileResponsive() {
-  //           // Ensure viewport is set for mobile
-  //           let viewport = document.querySelector('meta[name="viewport"]');
-  //           if (!viewport) {
-  //               viewport = document.createElement('meta');
-  //               viewport.name = 'viewport';
-  //               viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes';
-  //               document.head.appendChild(viewport);
-  //           }
-  //
-  //           // Make images responsive
-  //           try {
-  //               const images = document.querySelectorAll('img');
-  //               images.forEach(img => {
-  //                   if (!img.style.maxWidth) {
-  //                       img.style.maxWidth = '100%';
-  //                       img.style.height = 'auto';
-  //                   }
-  //               });
-  //
-  //               // Ensure logo images are properly sized for mobile
-  //               const logoSelectors = [
-  //                   '[data-zs-logo] img',
-  //                   '.logo img',
-  //                   '.brand-logo img',
-  //                   '.site-logo img',
-  //                   'header img',
-  //                   '.header img'
-  //               ];
-  //
-  //               logoSelectors.forEach(selector => {
-  //                   const logos = document.querySelectorAll(selector);
-  //                   logos.forEach(logo => {
-  //                       if (logo) {
-  //                           logo.style.maxWidth = '100%';
-  //                           logo.style.height = 'auto';
-  //                           logo.style.objectFit = 'contain';
-  //                       }
-  //                   });
-  //               });
-  //           } catch(e) {
-  //               console.error('Responsive image error:', e);
-  //           }
-  //       }
-  //
-  //       function changeBackgroundColor() {
-  //           try {
-  //               document.body.style.backgroundColor = 'white';
-  //               document.documentElement.style.backgroundColor = 'white';
-  //
-  //               const containers = document.querySelectorAll('header, .header, .app-bar, .top-bar, nav');
-  //               containers.forEach(container => {
-  //                   if (container) {
-  //                       container.style.backgroundColor = 'white';
-  //                   }
-  //               });
-  //           } catch(e) {
-  //               console.error('Background color change error:', e);
-  //           }
-  //       }
-  //
-  //       function repositionChatIcon() {
-  //           const chatSelectors = [
-  //               '.zsiq_flt_rel',
-  //               '#zsiq_float',
-  //               '.zsiq_float',
-  //               '[id*="zsiq"]',
-  //               '.siqicon',
-  //               '.siqico-chat'
-  //           ];
-  //
-  //           chatSelectors.forEach(selector => {
-  //               try {
-  //                   const elements = document.querySelectorAll(selector);
-  //                   elements.forEach(el => {
-  //                       if (el && el.style) {
-  //                           el.style.cssText = `
-  //                               position: fixed !important;
-  //                               left: 20px !important;
-  //                               top: 50% !important;
-  //                               transform: translateY(-50%) !important;
-  //                               right: auto !important;
-  //                               bottom: auto !important;
-  //                               z-index: 9999 !important;
-  //                           `;
-  //                       }
-  //                   });
-  //               } catch(e) {
-  //                   console.error('Chat icon positioning error:', e);
-  //               }
-  //           });
-  //       }
-  //
-  //       function handleExternalLinks() {
-  //           try {
-  //               document.removeEventListener('click', globalClickHandler, true);
-  //               document.addEventListener('click', globalClickHandler, true);
-  //           } catch(e) {
-  //               console.error('External link handler error:', e);
-  //           }
-  //       }
-  //
-  //       function globalClickHandler(e) {
-  //           try {
-  //               let target = e.target;
-  //
-  //               while (target && target !== document.body && target.tagName !== 'A' && target.tagName !== 'BUTTON') {
-  //                   target = target.parentElement;
-  //               }
-  //
-  //               if (!target || (target.tagName !== 'A' && target.tagName !== 'BUTTON')) {
-  //                   return;
-  //               }
-  //
-  //               const href = target.getAttribute('href') || target.getAttribute('data-href') || '';
-  //               const buttonText = (target.textContent || target.innerText || '').toLowerCase();
-  //               const buttonClass = (target.className || '').toLowerCase();
-  //               const buttonId = (target.id || '').toLowerCase();
-  //
-  //               // Enhanced Google Sign-In detection
-  //               const isGoogleSignIn =
-  //                   buttonText.includes('google') && (buttonText.includes('sign') || buttonText.includes('login')) ||
-  //                   buttonClass.includes('google') ||
-  //                   buttonId.includes('google') ||
-  //                   (href && (
-  //                       href.includes('accounts.google.com') ||
-  //                       href.includes('oauth.google.com') ||
-  //                       href.includes('googleapis.com/oauth')
-  //                   ));
-  //
-  //               if (isGoogleSignIn) {
-  //                   e.preventDefault();
-  //                   e.stopPropagation();
-  //
-  //                   const messageData = {
-  //                       type: 'google_signin',
-  //                       url: href || window.location.href,
-  //                       buttonText: buttonText,
-  //                       buttonClass: buttonClass,
-  //                       buttonId: buttonId
-  //                   };
-  //
-  //                   sendMessageToFlutter(messageData);
-  //                   return false;
-  //               }
-  //
-  //               if (href) {
-  //                   // Social media detection with improved patterns
-  //                   const socialPatterns = {
-  //                       facebook: /facebook\.com|fb\.com|fb\.me/i,
-  //                       instagram: /instagram\.com|instagr\.am/i,
-  //                       twitter: /twitter\.com|x\.com/i,
-  //                       linkedin: /linkedin\.com|lnkd\.in/i,
-  //                       youtube: /youtube\.com|youtu\.be/i,
-  //                       tiktok: /tiktok\.com/i,
-  //                       snapchat: /snapchat\.com/i
-  //                   };
-  //
-  //                   for (const [platform, pattern] of Object.entries(socialPatterns)) {
-  //                       if (pattern.test(href)) {
-  //                           e.preventDefault();
-  //                           e.stopPropagation();
-  //
-  //                           sendMessageToFlutter({
-  //                               type: 'external_link',
-  //                               url: href,
-  //                               platform: platform === 'facebook' ? 'facebook' : 'social'
-  //                           });
-  //                           return false;
-  //                       }
-  //                   }
-  //
-  //                   // Handle mailto and tel links
-  //                   if (href.startsWith('mailto:') || href.startsWith('tel:')) {
-  //                       e.preventDefault();
-  //                       e.stopPropagation();
-  //
-  //                       sendMessageToFlutter({
-  //                           type: 'external_link',
-  //                           url: href
-  //                       });
-  //                       return false;
-  //                   }
-  //               }
-  //           } catch(error) {
-  //               console.error('Click handler error:', error);
-  //           }
-  //       }
-  //
-  //       function sendMessageToFlutter(data) {
-  //           const message = JSON.stringify(data);
-  //           console.log('Sending to Flutter:', message);
-  //
-  //           try {
-  //               // Try multiple communication methods for better compatibility
-  //               if (window.Flutter && window.Flutter.postMessage) {
-  //                   window.Flutter.postMessage(message);
-  //               }
-  //
-  //               window.postMessage(message, '*');
-  //
-  //               window.dispatchEvent(new CustomEvent('flutterMessage', {
-  //                   detail: data
-  //               }));
-  //           } catch(err) {
-  //               console.error('Message sending error:', err);
-  //           }
-  //       }
-  //
-  //       function initializeBridge() {
-  //           if (bridgeInitialized) return;
-  //           bridgeInitialized = true;
-  //
-  //           ensureMobileResponsive();
-  //           changeBackgroundColor();
-  //           repositionChatIcon();
-  //           handleExternalLinks();
-  //
-  //           // Optimized MutationObserver
-  //           const observer = new MutationObserver(() => {
-  //               requestAnimationFrame(() => {
-  //                   ensureMobileResponsive();
-  //                   changeBackgroundColor();
-  //                   repositionChatIcon();
-  //                   handleExternalLinks();
-  //               });
-  //           });
-  //
-  //           observer.observe(document.body, {
-  //               childList: true,
-  //               subtree: true
-  //           });
-  //
-  //           // Staggered initialization for better performance
-  //           const initTasks = [
-  //               { fn: ensureMobileResponsive, delay: 300 },
-  //               { fn: repositionChatIcon, delay: 400 },
-  //               { fn: () => { changeBackgroundColor(); handleExternalLinks(); }, delay: 500 },
-  //               { fn: () => sendMessageToFlutter({type: 'bridge_ready'}), delay: 600 }
-  //           ];
-  //
-  //           initTasks.forEach(task => {
-  //               setTimeout(task.fn, task.delay);
-  //           });
-  //       }
-  //
-  //       // Initialize when ready
-  //       if (document.readyState === 'loading') {
-  //           document.addEventListener('DOMContentLoaded', initializeBridge);
-  //       } else {
-  //           setTimeout(initializeBridge, 50);
-  //       }
-  //   })();
-  // ''';
 
   @override
   void initState() {
@@ -708,16 +438,7 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
           onNavigationRequest: (NavigationRequest request) {
             debugPrint('Navigation request: ${request.url}');
             //
-            // // Check if it's a Google authentication URL
-            // if (ChromeTabHelper.isGoogleAuthUrl(request.url)) {
-            //   ChromeTabHelper.launchGoogleSignIn(
-            //     url: request.url,
-            //     context: context,
-            //   );
-            //   return NavigationDecision.prevent;
-            // }
 
-            // Check if it's an external URL
             if (UrlLauncherHelper.isExternalUrl(request.url)) {
               UrlLauncherHelper.handleExternalUrl(request.url, context);
               return NavigationDecision.prevent;
@@ -776,16 +497,6 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
         Map<String, dynamic>.from(jsonDecode(data) as Map);
 
         debugPrint('✓ Parsed JSON data: $parsedData');
-
-        // Handle Google Sign-In
-        // if (parsedData['type'] == 'google_signin') {
-        //   final url = parsedData['url'] ?? 'https://accounts.google.com/signin';
-        //   ChromeTabHelper.launchGoogleSignIn(
-        //     url: url,
-        //     context: context,
-        //   );
-        //   return;
-        // }
 
         // Handle external links
         if (parsedData['type'] == 'external_link') {
@@ -1068,7 +779,7 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
     }
   }
 
-  // Add method to go forward in history
+  // Add method to go forward in history (keeping this method but it won't be used since we removed the UI)
   Future<void> _goForward() async {
     if (currentHistoryIndex < navigationHistory.length - 1) {
       currentHistoryIndex++;
@@ -1207,7 +918,7 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
                   borderRadius: BorderRadius.circular(12),
                   color: Colors.white.withOpacity(0.95),
                   child: InkWell(
-                    onTap: () => _showMenuBottomSheet(context),
+                    onTap: () => _openMenu(context),
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
                       padding: const EdgeInsets.all(12),
@@ -1219,7 +930,7 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
                         ),
                       ),
                       child: Icon(
-                        Icons.menu,
+                        Icons.info_outline,
                         color: Colors.teal,
                         size: 24,
                       ),
@@ -1383,92 +1094,7 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
                   ),
                 ),
 
-              // Navigation buttons row (optional - you can add this for better UX)
-              Positioned(
-                bottom: _showCookieBanner ? 180 : 80,
-                right: 16,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Back button
-                      if (currentHistoryIndex > 0)
-                        Material(
-                          elevation: 4,
-                          shape: const CircleBorder(),
-                          color: Colors.white,
-                          child: InkWell(
-                            onTap: () async {
-                              HapticFeedback.lightImpact();
-                              await _onWillPop();
-                            },
-                            borderRadius: BorderRadius.circular(20),
-                            child: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.arrow_back_ios_rounded,
-                                color: Colors.teal,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                      if (currentHistoryIndex > 0) const SizedBox(width: 8),
-
-                      // Forward button
-                      if (currentHistoryIndex < navigationHistory.length - 1)
-                        Material(
-                          elevation: 4,
-                          shape: const CircleBorder(),
-                          color: Colors.white,
-                          child: InkWell(
-                            onTap: () async {
-                              HapticFeedback.lightImpact();
-                              await _goForward();
-                            },
-                            borderRadius: BorderRadius.circular(20),
-                            child: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.arrow_forward_ios_rounded,
-                                color: Colors.teal,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Refresh button
+              // Refresh button (keeping only the refresh button, removing navigation buttons)
               Positioned(
                 bottom: _showCookieBanner ? 180 : 80,
                 left: 16,
@@ -1520,232 +1146,41 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
     );
   }
 
-
-  // Add these methods to your _AfronikaBrowserAppState class, after the existing methods
-// Place them before the @override Widget build(BuildContext context) method
-
-  void _showMenuBottomSheet(BuildContext context) {
-    HapticFeedback.selectionClick();
-
+  void _openMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, -5),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle bar
-              Container(
-                margin: const EdgeInsets.only(top: 12),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-
-              // Menu title
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.apps,
-                      color: Colors.teal,
-                      size: 28,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Menu',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const Divider(height: 1),
-
-              // Menu items
-              _buildMenuItem(
-                context: context,
-                icon: Icons.privacy_tip,
-                title: 'Privacy Policy',
-                subtitle: 'Read our privacy policy',
-                onTap: () {
-                  Navigator.pop(context);
-                  _navigateToPrivacyPolicy();
-                },
-              ),
-
-              _buildMenuItem(
-                context: context,
-                icon: Icons.info,
-                title: 'About App',
-                subtitle: 'Learn about Afronika',
-                onTap: () {
-                  Navigator.pop(context);
-                  _navigateToAboutApp();
-                },
-              ),
-
-              _buildMenuItem(
-                context: context,
-                icon: Icons.contact_support,
-                title: 'Contact',
-                subtitle: 'Get in touch with us',
-                onTap: () {
-                  Navigator.pop(context);
-                  _navigateToContact();
-                },
-              ),
-
-              const SizedBox(height: 20),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildMenuItem({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.teal.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  icon,
-                  color: Colors.teal,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[800],
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios,
-                color: Colors.grey[400],
-                size: 16,
-              ),
-            ],
-          ),
-        ),
+      builder: (_) => MenuBottomSheetWidget(
+        onPrivacyPolicyTap: () => _navigateToPrivacyPolicy(),
+        onAboutAppTap: () => _navigateToAboutApp(),
+        onContactTap: () => _navigateToContact(),
       ),
     );
   }
 
   void _navigateToPrivacyPolicy() {
-    // Uncomment this when you have imported the PrivacyPolicyScreen
-
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => PrivacyPolicyScreen(),
       ),
     );
-
-
-    // Temporary: Show a message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Privacy Policy Screen - Import the screen file to enable'),
-        backgroundColor: Colors.blue,
-      ),
-    );
   }
 
   void _navigateToAboutApp() {
-    // Uncomment this when you have imported the AboutAppScreen
-
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AboutAppScreen(),
       ),
     );
-
-
-    // Temporary: Show a message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('About App Screen - Import the screen file to enable'),
-        backgroundColor: Colors.green,
-      ),
-    );
   }
 
   void _navigateToContact() {
-    // Uncomment this when you have imported the ContactScreen
-
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ContactScreen(),
-      ),
-    );
-
-
-    // Temporary: Show a message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Contact Screen - Import the screen file to enable'),
-        backgroundColor: Colors.orange,
       ),
     );
   }

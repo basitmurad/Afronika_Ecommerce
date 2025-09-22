@@ -92,7 +92,7 @@ class ContactScreen extends StatelessWidget {
             ContactCard(
               icon: Icons.email,
               title: "Email",
-              subtitle: "contact@afronika.com",
+              subtitle: "support@afronika.com",
               color: Colors.red,
               onTap: () {
                 _launchEmail();
@@ -102,7 +102,7 @@ class ContactScreen extends StatelessWidget {
             ContactCard(
               icon: Icons.phone,
               title: "Phone",
-              subtitle: "+234 8160052390",
+              subtitle: "+234 07032280605",
               color: Colors.green,
               onTap: () {
                 _launchPhone();

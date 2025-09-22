@@ -157,6 +157,7 @@ class ContactScreen extends StatelessWidget {
   void _launchEmail() async {
     final Uri emailUri = Uri(
       scheme: 'mailto',
+
       path: 'support@afronika.com',
       queryParameters: {
         'subject': 'Support Request',
@@ -168,7 +169,7 @@ class ContactScreen extends StatelessWidget {
   }
 
   void _launchPhone() async {
-    final Uri phoneUri = Uri(scheme: 'tel', path: '+2348160052390');
+    final Uri phoneUri = Uri(scheme: 'tel', path: '+23407032280605');
     if (await canLaunchUrl(phoneUri)) {
       await launchUrl(phoneUri);
     }

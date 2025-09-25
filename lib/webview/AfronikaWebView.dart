@@ -1,18 +1,19 @@
-import 'package:afronika/common/GButton.dart';
 import 'package:afronika/webview/UrlLauncherHelper.dart';
-import 'package:afronika/webview/ChromeTabHelper.dart';
+import 'package:afronika/webview/AfronikaBrowserHelper.dart';
 import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart'
+    hide WebResourceError;
 import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
-import 'dart:io';
+import 'package:webview_flutter_platform_interface/src/types/web_resource_error.dart';
+import 'dart:async';
 
+import '../common/CookieBanner.dart';
+import '../common/ErrorView.dart';
 import '../common/MenuBottomSheetWidget.dart';
+import '../common/RefreshFloatingButton.dart';
 import '../features/about/AboutAppScreen.dart';
 import '../features/contact/ContactScreen.dart';
 import '../features/privacy/PrivacyPolicyScreen.dart';
-import '../utils/DialogHelper.dart';
 
 class AfronikaBrowserApp extends StatefulWidget {
   const AfronikaBrowserApp({super.key});
@@ -21,29 +22,68 @@ class AfronikaBrowserApp extends StatefulWidget {
   _AfronikaBrowserAppState createState() => _AfronikaBrowserAppState();
 }
 
-class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProviderStateMixin {
-  late WebViewController webViewController;
+class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
+    with TickerProviderStateMixin {
+  late InAppWebViewController webViewController;
   late AnimationController _bannerAnimationController;
   late Animation<double> _bannerAnimation;
 
-  // Navigation history tracking
-  List<String> navigationHistory = [];
-  int currentHistoryIndex = -1;
-
   String currentUrl = "https://www.afronika.com/";
   bool isLoading = true;
-  int loadingProgress = 0;
+  double loadingProgress = 0;
   bool isRefreshing = false;
   bool hasError = false;
   String errorMessage = "";
   bool _showCookieBanner = false;
   bool _cookiesAccepted = false;
-  String get injectedJavaScript => '''
+
+  // Payment Flow Properties
+  bool _isInPaymentFlow = false;
+  String? _paymentReturnUrl;
+  Timer? _paymentCheckTimer;
+
+  final GlobalKey webViewKey = GlobalKey();
+
+  InAppWebViewGroupOptions options = InAppWebViewGroupOptions(
+    crossPlatform: InAppWebViewOptions(
+      useShouldOverrideUrlLoading: true,
+      mediaPlaybackRequiresUserGesture: false,
+      javaScriptEnabled: true,
+      javaScriptCanOpenWindowsAutomatically: false,
+      clearCache: false,
+      transparentBackground: true,
+      disableVerticalScroll: false,
+      disableHorizontalScroll: false,
+      supportZoom: false,
+    ),
+    android: AndroidInAppWebViewOptions(
+      useHybridComposition: true,
+      useShouldInterceptRequest: false,
+      // adjust as needed
+      hardwareAcceleration: false,
+      // add this line
+      disableDefaultErrorPage: false,
+      // keep default
+
+      mixedContentMode: AndroidMixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
+    ),
+    ios: IOSInAppWebViewOptions(
+      allowsInlineMediaPlayback: true,
+      allowsAirPlayForMediaPlayback: true,
+      allowsPictureInPictureMediaPlayback: true,
+    ),
+  );
+
+  String get enhancedInjectedJavaScript => '''
   (function() {
       'use strict';
 
       let bridgeInitialized = false;
       const cookiesAccepted = $_cookiesAccepted;
+
+      // Payment flow tracking
+      let isInPaymentFlow = false;
+      let originalCartUrl = '';
 
       // Set cookie consent if accepted
       if (cookiesAccepted) {
@@ -53,6 +93,132 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
           } catch(e) {
               console.log('Error setting cookie consent:', e);
           }
+      }
+
+      function isPaymentUrl(url) {
+          const paymentPatterns = [
+              'payment', 'checkout', 'pay', 'stripe', 'paypal', 'razorpay', 
+              'paytm', 'gateway', '/cart/pay', '/payment/', '/checkout/',
+              'billing', 'order', 'purchase', 'transaction'
+          ];
+          const lowerUrl = url.toLowerCase();
+          return paymentPatterns.some(pattern => lowerUrl.includes(pattern));
+      }
+
+      function isPaymentSuccessUrl(url) {
+          const successPatterns = ['success', 'complete', 'confirmed', 'thank', 'order-complete', 'receipt', 'confirmation'];
+          const lowerUrl = url.toLowerCase();
+          return successPatterns.some(pattern => lowerUrl.includes(pattern));
+      }
+
+      function isPaymentFailureUrl(url) {
+          const failurePatterns = ['cancel', 'failed', 'error', 'declined', 'timeout', 'abort'];
+          const lowerUrl = url.toLowerCase();
+          return failurePatterns.some(pattern => lowerUrl.includes(pattern));
+      }
+
+      function detectPaymentFlow() {
+          const currentUrl = window.location.href;
+          
+          // Entering payment flow
+          if (isPaymentUrl(currentUrl) && !isInPaymentFlow) {
+              isInPaymentFlow = true;
+              originalCartUrl = document.referrer || '';
+              
+              window.flutter_inappwebview.callHandler('paymentFlowStarted', currentUrl, originalCartUrl);
+              
+              console.log('Payment flow started:', currentUrl);
+              return;
+          }
+          
+          // Payment completed successfully
+          if (isPaymentSuccessUrl(currentUrl) && isInPaymentFlow) {
+              isInPaymentFlow = false;
+              
+              window.flutter_inappwebview.callHandler('paymentSuccess', currentUrl);
+              
+              console.log('Payment completed successfully');
+              return;
+          }
+          
+          // Payment cancelled or failed
+          if (isPaymentFailureUrl(currentUrl) && isInPaymentFlow) {
+              isInPaymentFlow = false;
+              
+              window.flutter_inappwebview.callHandler('paymentFailed', currentUrl, originalCartUrl);
+              
+              console.log('Payment cancelled or failed');
+              return;
+          }
+      }
+
+      function enhancePaymentButtons() {
+          // Find payment buttons and add click tracking
+          const paymentSelectors = [
+              'button[class*="payment"]',
+              'button[class*="checkout"]',
+              'button[class*="pay"]',
+              'input[value*="Pay"]',
+              'input[value*="Payment"]',
+              'input[value*="Checkout"]',
+              'a[href*="payment"]',
+              'a[href*="checkout"]',
+              '.payment-btn',
+              '.checkout-btn',
+              '.pay-btn',
+              '[data-payment]',
+              '.btn-payment',
+              '.btn-checkout'
+          ];
+
+          paymentSelectors.forEach(selector => {
+              try {
+                  const buttons = document.querySelectorAll(selector);
+                  buttons.forEach(button => {
+                      if (button && !button.dataset.paymentTracked) {
+                          button.dataset.paymentTracked = 'true';
+                          
+                          button.addEventListener('click', (e) => {
+                              console.log('Payment button clicked:', button);
+                              
+                              window.flutter_inappwebview.callHandler('paymentButtonClicked', 
+                                  button.textContent || button.value || 'Unknown', 
+                                  window.location.href
+                              );
+                          });
+                      }
+                  });
+              } catch(e) {
+                  console.error('Payment button enhancement error:', e);
+              }
+          });
+      }
+
+      function monitorPaymentProgress() {
+          // Monitor for payment progress indicators
+          const progressSelectors = [
+              '.payment-progress',
+              '.checkout-progress',
+              '.loading',
+              '.processing',
+              '[class*="progress"]',
+              '[class*="loading"]',
+              '.spinner',
+              '.loader'
+          ];
+
+          progressSelectors.forEach(selector => {
+              try {
+                  const elements = document.querySelectorAll(selector);
+                  elements.forEach(el => {
+                      if (el && el.style.display !== 'none' && el.offsetHeight > 0) {
+                          window.flutter_inappwebview.callHandler('paymentProcessing', 'Payment in progress...');
+                      }
+                  });
+              } catch(e) {
+                  console.error('Payment progress monitoring error:', e);
+              }
+          });
       }
 
       function ensureMobileResponsive() {
@@ -75,7 +241,6 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
                   }
               });
 
-              // Ensure logo images are properly sized for mobile
               const logoSelectors = [
                   '[data-zs-logo] img',
                   '.logo img',
@@ -172,15 +337,21 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
               const href = target.getAttribute('href') || target.getAttribute('data-href') || '';
 
               if (href) {
+                  // Don't interfere with payment URLs - let them load normally
+                  if (isPaymentUrl(href)) {
+                      console.log('Payment URL clicked, allowing normal navigation:', href);
+                      return true;
+                  }
+
                   // Social media detection with improved patterns
                   const socialPatterns = {
-                      facebook: /facebook\.com|fb\.com|fb\.me/i,
-                      instagram: /instagram\.com|instagr\.am/i,
-                      twitter: /twitter\.com|x\.com/i,
-                      linkedin: /linkedin\.com|lnkd\.in/i,
-                      youtube: /youtube\.com|youtu\.be/i,
-                      tiktok: /tiktok\.com/i,
-                      snapchat: /snapchat\.com/i
+                      facebook: /facebook.com|fb.com|fb.me/i,
+                      instagram: /instagram.com|instagr.am/i,
+                      twitter: /twitter.com|x.com/i,
+                      linkedin: /linkedin.com|lnkd.in/i,
+                      youtube: /youtube.com|youtu.be/i,
+                      tiktok: /tiktok.com/i,
+                      snapchat: /snapchat.com/i
                   };
 
                   for (const [platform, pattern] of Object.entries(socialPatterns)) {
@@ -188,11 +359,7 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
                           e.preventDefault();
                           e.stopPropagation();
 
-                          sendMessageToFlutter({
-                              type: 'external_link',
-                              url: href,
-                              platform: platform === 'facebook' ? 'facebook' : 'social'
-                          });
+                          window.flutter_inappwebview.callHandler('externalLink', href, platform === 'facebook' ? 'facebook' : 'social');
                           return false;
                       }
                   }
@@ -202,10 +369,7 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
                       e.preventDefault();
                       e.stopPropagation();
 
-                      sendMessageToFlutter({
-                          type: 'external_link',
-                          url: href
-                      });
+                      window.flutter_inappwebview.callHandler('externalLink', href);
                       return false;
                   }
               }
@@ -214,42 +378,28 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
           }
       }
 
-      function sendMessageToFlutter(data) {
-          const message = JSON.stringify(data);
-          console.log('Sending to Flutter:', message);
-
-          try {
-              // Try multiple communication methods for better compatibility
-              if (window.Flutter && window.Flutter.postMessage) {
-                  window.Flutter.postMessage(message);
-              }
-
-              window.postMessage(message, '*');
-
-              window.dispatchEvent(new CustomEvent('flutterMessage', {
-                  detail: data
-              }));
-          } catch(err) {
-              console.error('Message sending error:', err);
-          }
-      }
-
       function initializeBridge() {
           if (bridgeInitialized) return;
           bridgeInitialized = true;
 
+          // Initialize all functions
           ensureMobileResponsive();
           changeBackgroundColor();
           repositionChatIcon();
           handleExternalLinks();
+          enhancePaymentButtons();
+          detectPaymentFlow();
 
-          // Optimized MutationObserver
+          // Enhanced MutationObserver for payment flow
           const observer = new MutationObserver(() => {
               requestAnimationFrame(() => {
                   ensureMobileResponsive();
                   changeBackgroundColor();
                   repositionChatIcon();
                   handleExternalLinks();
+                  enhancePaymentButtons();
+                  detectPaymentFlow();
+                  monitorPaymentProgress();
               });
           });
 
@@ -258,12 +408,24 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
               subtree: true
           });
 
-          // Staggered initialization for better performance
+          // URL change detection for SPA applications
+          let lastUrl = location.href;
+          new MutationObserver(() => {
+              const url = location.href;
+              if (url !== lastUrl) {
+                  lastUrl = url;
+                  setTimeout(detectPaymentFlow, 100);
+              }
+          }).observe(document, { subtree: true, childList: true });
+
+          // Staggered initialization
           const initTasks = [
               { fn: ensureMobileResponsive, delay: 300 },
               { fn: repositionChatIcon, delay: 400 },
               { fn: () => { changeBackgroundColor(); handleExternalLinks(); }, delay: 500 },
-              { fn: () => sendMessageToFlutter({type: 'bridge_ready'}), delay: 600 }
+              { fn: enhancePaymentButtons, delay: 600 },
+              { fn: detectPaymentFlow, delay: 700 },
+              { fn: () => window.flutter_inappwebview.callHandler('bridgeReady'), delay: 800 }
           ];
 
           initTasks.forEach(task => {
@@ -280,18 +442,17 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
   })();
 ''';
 
-
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _checkCookieConsent();
-    _initializeWebView();
   }
 
   @override
   void dispose() {
     _bannerAnimationController.dispose();
+    _paymentCheckTimer?.cancel();
     super.dispose();
   }
 
@@ -307,11 +468,10 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
   }
 
   Future<void> _checkCookieConsent() async {
-    final prefs = await SharedPreferences.getInstance();
-    final consent = prefs.getBool('cookie_consent') ?? false;
+    final consentData = await AfronikaBrowserHelper.checkCookieConsent();
     setState(() {
-      _showCookieBanner = !consent;
-      _cookiesAccepted = consent;
+      _showCookieBanner = consentData['showCookieBanner']!;
+      _cookiesAccepted = consentData['cookiesAccepted']!;
     });
 
     if (_showCookieBanner) {
@@ -320,566 +480,296 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
   }
 
   Future<void> _handleCookieConsent(bool accept) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('cookie_consent', accept);
-
-    setState(() {
-      _cookiesAccepted = accept;
-    });
-
-    // Animate banner out
-    await _bannerAnimationController.reverse();
-
-    setState(() {
-      _showCookieBanner = false;
-    });
-
-    // Inject updated JavaScript with cookie consent
-    if (accept) {
-      webViewController.runJavaScript('''
-        document.cookie = "cookie_consent=accepted; path=/; max-age=31536000";
-        try {
-          localStorage.setItem('cookie_consent', 'true');
-        } catch(e) {}
-      ''');
-    }
-
-    // Reload page to apply cookie settings
-    webViewController.reload();
+    await AfronikaBrowserHelper.handleCookieConsent(
+      accept: accept,
+      webViewController: webViewController,
+      bannerAnimationController: _bannerAnimationController,
+      onStateUpdate: (cookiesAccepted, showCookieBanner) {
+        setState(() {
+          _cookiesAccepted = cookiesAccepted;
+          _showCookieBanner = showCookieBanner;
+        });
+      },
+    );
   }
 
-  void _initializeWebView() {
-    webViewController = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0x00000000))
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onProgress: (int progress) {
-            setState(() {
-              loadingProgress = progress;
-              isLoading = progress < 100;
-            });
-          },
-          onPageStarted: (String url) {
-            setState(() {
-              isLoading = true;
-              currentUrl = url;
-              hasError = false;
-              errorMessage = "";
-            });
+  // Payment Flow Methods
+  bool _isPaymentUrl(String url) {
+    final paymentPatterns = [
+      'payment',
+      'checkout',
+      'pay',
+      'stripe',
+      'paypal',
+      'razorpay',
+      'paytm',
+      'gateway',
+      '/cart/pay',
+      '/payment/',
+      '/checkout/',
+      'billing',
+      'order',
+      'purchase',
+      'transaction'
+    ];
 
-            // Check if navigating to home page
-            bool isHomePage = url == 'https://www.afronika.com/' ||
-                url == 'https://afronika.com/' ||
-                url == 'http://www.afronika.com/' ||
-                url == 'http://afronika.com/' ||
-                url.endsWith('afronika.com');
+    final lowerUrl = url.toLowerCase();
+    return paymentPatterns.any((pattern) => lowerUrl.contains(pattern));
+  }
 
-            // Reset navigation history if going to home page
-            if (isHomePage && navigationHistory.isNotEmpty) {
-              // Clear history and start fresh when returning to home
-              debugPrint('🏠 Home page detected - resetting navigation history');
-              navigationHistory.clear();
-              navigationHistory.add(url);
-              currentHistoryIndex = 0;
-            } else {
-              // Normal navigation history tracking
-              if (navigationHistory.isEmpty ||
-                  (currentHistoryIndex >= 0 &&
-                      currentHistoryIndex < navigationHistory.length &&
-                      navigationHistory[currentHistoryIndex] != url)) {
-                // Remove forward history if navigating to a new page
-                if (currentHistoryIndex < navigationHistory.length - 1) {
-                  navigationHistory = navigationHistory.sublist(0, currentHistoryIndex + 1);
-                }
-                navigationHistory.add(url);
-                currentHistoryIndex = navigationHistory.length - 1;
+  void _handlePaymentFlow(String url) {
+    setState(() {
+      _isInPaymentFlow = true;
+      _paymentReturnUrl = currentUrl;
+    });
 
-                // Limit history size to prevent memory issues
-                if (navigationHistory.length > 50) {
-                  navigationHistory.removeAt(0);
-                  currentHistoryIndex--;
-                }
-              }
-            }
-
-            debugPrint('📍 Navigation History: ${navigationHistory.length} pages');
-            debugPrint('📍 Current Index: $currentHistoryIndex');
-            debugPrint('📍 Current URL: $url');
-          },
-          onPageFinished: (String url) {
-            setState(() {
-              isLoading = false;
-              isRefreshing = false;
-              currentUrl = url;
-            });
-
-            // Inject JavaScript after page loads
-            Future.delayed(const Duration(milliseconds: 300), () {
-              webViewController.runJavaScript(injectedJavaScript);
-            });
-          },
-          onWebResourceError: (WebResourceError error) {
-            setState(() {
-              isRefreshing = false;
-              hasError = true;
-              errorMessage = _getErrorMessage(error);
-            });
-
-            debugPrint('WebView Error: ${error.description}');
-
-            // Show error dialog after a brief delay
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (mounted && hasError) {
-                _showErrorDialog();
-              }
-            });
-          },
-          onNavigationRequest: (NavigationRequest request) {
-            debugPrint('Navigation request: ${request.url}');
-            //
-
-            if (UrlLauncherHelper.isExternalUrl(request.url)) {
-              UrlLauncherHelper.handleExternalUrl(request.url, context);
-              return NavigationDecision.prevent;
-            }
-
-            // Check if it's a Facebook link
-            if (UrlLauncherHelper.isFacebookUrl(request.url)) {
-              UrlLauncherHelper.handleFacebookUrl(request.url, context);
-              return NavigationDecision.prevent;
-            }
-
-            // Check for other social media links
-            if (UrlLauncherHelper.isSocialMediaUrl(request.url)) {
-              UrlLauncherHelper.handleSocialMediaUrl(request.url, context);
-              return NavigationDecision.prevent;
-            }
-
-            // Allow normal web navigation for your main domain
-            if (request.url.contains('afronika.com')) {
-              return NavigationDecision.navigate;
-            }
-
-            // For any other external links, open in external browser
-            if (!request.url.startsWith('https://www.afronika.com') &&
-                !request.url.startsWith('https://afronika.com')) {
-              UrlLauncherHelper.handleExternalUrl(request.url, context);
-              return NavigationDecision.prevent;
-            }
-
-            return NavigationDecision.navigate;
-          },
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation(Colors.white),
+              ),
+            ),
+            SizedBox(width: 12),
+            Text('Processing payment...'),
+          ],
         ),
-      )
-      ..addJavaScriptChannel(
-        'Flutter',
-        onMessageReceived: _handleJavaScriptMessage,
-      );
+        duration: Duration(seconds: 3),
+        backgroundColor: Colors.orange,
+      ),
+    );
 
-    _loadInitialUrl();
+    _checkPaymentCompletion();
   }
 
-  void _handleJavaScriptMessage(JavaScriptMessage message) {
-    try {
-      debugPrint('✓ Received JS message: ${message.message}');
-
-      final data = message.message;
-
-      if (data.contains('hamburger_clicked')) {
-        HapticFeedback.selectionClick();
+  void _checkPaymentCompletion() {
+    _paymentCheckTimer?.cancel();
+    _paymentCheckTimer = Timer.periodic(Duration(seconds: 2), (timer) async {
+      if (!_isInPaymentFlow) {
+        timer.cancel();
         return;
       }
 
-      // Try to parse as JSON
       try {
-        final Map<String, dynamic> parsedData =
-        Map<String, dynamic>.from(jsonDecode(data) as Map);
+        final currentPageUrl = await webViewController.getUrl();
+        if (currentPageUrl != null) {
+          final lowerUrl = currentPageUrl.toString().toLowerCase();
 
-        debugPrint('✓ Parsed JSON data: $parsedData');
-
-        // Handle external links
-        if (parsedData['type'] == 'external_link') {
-          final url = parsedData['url'];
-          final platform = parsedData['platform'];
-
-          if (platform == 'facebook') {
-            UrlLauncherHelper.handleFacebookUrl(url, context);
-          } else if (platform == 'social') {
-            UrlLauncherHelper.handleSocialMediaUrl(url, context);
-          } else {
-            UrlLauncherHelper.handleExternalUrl(url, context);
+          if (lowerUrl.contains('success') ||
+              lowerUrl.contains('complete') ||
+              lowerUrl.contains('confirmed') ||
+              lowerUrl.contains('thank') ||
+              lowerUrl.contains('receipt') ||
+              lowerUrl.contains('confirmation')) {
+            _handlePaymentSuccess();
+            timer.cancel();
+          } else if (lowerUrl.contains('cancel') ||
+              lowerUrl.contains('failed') ||
+              lowerUrl.contains('error') ||
+              lowerUrl.contains('declined') ||
+              lowerUrl.contains('timeout') ||
+              lowerUrl.contains('abort')) {
+            _handlePaymentFailure();
+            timer.cancel();
+          } else if (_paymentReturnUrl != null &&
+              currentPageUrl.toString().contains(_paymentReturnUrl!)) {
+            _resetPaymentFlow();
+            timer.cancel();
           }
         }
-      } catch (jsonError) {
-        debugPrint('❌ JSON parse error: $jsonError');
-
-        // Fallback handling
-        if (data.contains('google_signin')) {
-          ChromeTabHelper.launchGoogleSignIn(
-            url: 'https://accounts.google.com/signin',
-            context: context,
-          );
-        } else if (data.contains('external_link')) {
-          // Try to extract URL from the message
-          final regex = RegExp(r'"url":"([^"]+)"');
-          final match = regex.firstMatch(data);
-          if (match != null) {
-            final url = match.group(1);
-            if (url != null) {
-              UrlLauncherHelper.handleUrl(url, context);
-            }
-          }
-        }
+      } catch (e) {
+        debugPrint('Payment check error: $e');
       }
-    } catch (e) {
-      debugPrint('❌ Error in JS message handler: $e');
-    }
+    });
   }
 
-  Future<void> _loadInitialUrl() async {
-    try {
-      // Check internet connectivity
-      final result = await InternetAddress.lookup('google.com')
-          .timeout(const Duration(seconds: 5));
-      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        webViewController.loadRequest(Uri.parse(currentUrl));
-      } else {
-        _showNoInternetDialog();
-      }
-    } catch (e) {
-      debugPrint('Connectivity check failed: $e');
-      // If connectivity check fails, still try to load but show appropriate error
-      webViewController.loadRequest(Uri.parse(currentUrl));
-    }
-  }
+  void _handlePaymentSuccess() {
+    setState(() {
+      _isInPaymentFlow = false;
+    });
 
-  String _getErrorMessage(WebResourceError error) {
-    final errorMessages = {
-      WebResourceErrorType.hostLookup: "Unable to find the website. Please check your internet connection.",
-      WebResourceErrorType.timeout: "The connection timed out. Please try again.",
-      WebResourceErrorType.connect: "Unable to connect to the server. Please check your internet connection.",
-      WebResourceErrorType.fileNotFound: "The requested page could not be found.",
-      WebResourceErrorType.authentication: "Authentication required to access this page.",
-      WebResourceErrorType.badUrl: "Invalid URL. Please check the web address.",
-      WebResourceErrorType.file: "File access error occurred.",
-      WebResourceErrorType.tooManyRequests: "Too many requests. Please try again later.",
-    };
-
-    return errorMessages[error.errorType] ??
-        _getFallbackErrorMessage(error.description);
-  }
-
-  String _getFallbackErrorMessage(String description) {
-    final desc = description.toLowerCase();
-    if (desc.contains('internet')) {
-      return "No internet connection. Please check your network settings.";
-    } else if (desc.contains('server')) {
-      return "Server is currently unavailable. Please try again later.";
-    } else if (desc.contains('dns')) {
-      return "DNS lookup failed. Please check your internet connection.";
-    }
-    return "Unable to load the page. Please try again.";
-  }
-
-  void _showNoInternetDialog() {
-    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white),
+            SizedBox(width: 12),
+            Text('Payment completed successfully!'),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 4),
+      ),
+    );
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.wifi_off, color: Colors.red),
-              SizedBox(width: 8),
-              Text('No Internet Connection'),
-            ],
-          ),
-          content: const Text(
-            'Please check your internet connection and try again.',
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-          actions: [
-            AButton(
-              buttonType: AButtonType.outlined,
-              text: "Exit",
-              onPressed: () => SystemNavigator.pop(),
-            ),
-
-            SizedBox(height: 12,),
-
-            AButton(
-              text: 'Retry',
-              onPressed: () {
-                Navigator.of(context).pop();
-                _retryConnection();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showErrorDialog() {
-    if (!mounted || !hasError) return;
-
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.error_outline, color: Colors.orange),
-              SizedBox(width: 8),
-              Text('Connection Error'),
-            ],
-          ),
-          content: Text(errorMessage.isNotEmpty
-              ? errorMessage
-              : 'Unable to load the page.'),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-          actions: [
-            AButton(
-              buttonType: AButtonType.outlined,
-              text: "Cancel",
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            SizedBox(height: 12,),
-            AButton(
-              text: 'Retry',
-              onPressed: () {
-                Navigator.of(context).pop();
-                _refreshPage();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _retryConnection() async {
-    setState(() {
-      isRefreshing = true;
-      hasError = false;
-      errorMessage = "";
-    });
-
-    try {
-      final result = await InternetAddress.lookup('google.com')
-          .timeout(const Duration(seconds: 3));
-      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        HapticFeedback.lightImpact();
-        webViewController.reload();
-      } else {
-        setState(() => isRefreshing = false);
-        _showNoInternetDialog();
-      }
-    } catch (e) {
-      debugPrint('Retry connection failed: $e');
-      setState(() => isRefreshing = false);
-      HapticFeedback.lightImpact();
-      webViewController.reload();
-    }
-  }
-
-  Future<void> _refreshPage() async {
-    setState(() {
-      isRefreshing = true;
-      hasError = false;
-      errorMessage = "";
-    });
-
-    try {
-      final result = await InternetAddress.lookup('google.com')
-          .timeout(const Duration(seconds: 3));
-      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        HapticFeedback.lightImpact();
-        webViewController.reload();
-      } else {
-        setState(() => isRefreshing = false);
-        _showNoInternetDialog();
-      }
-    } catch (e) {
-      debugPrint('Connectivity check during refresh failed: $e');
-      HapticFeedback.lightImpact();
-      webViewController.reload();
-    }
-  }
-
-  Future<bool> _onWillPop() async {
-    try {
-      debugPrint('🔙 Back button pressed');
-      debugPrint('📍 History: ${navigationHistory.length} pages, Current: $currentHistoryIndex');
-
-      // Check if current page is home page
-      bool isCurrentlyOnHome = currentUrl == 'https://www.afronika.com/' ||
-          currentUrl == 'https://afronika.com/' ||
-          currentUrl.endsWith('afronika.com');
-
-      // If on home page and history is minimal, show exit dialog
-      if (isCurrentlyOnHome && navigationHistory.length <= 1) {
-        debugPrint('🏠 Already on home page, showing exit dialog');
-        final shouldExit = await DialogHelper.showExitDialog(context);
-        return shouldExit ?? false;
-      }
-
-      // First check if we can go back in our navigation history
-      if (currentHistoryIndex > 0) {
-        currentHistoryIndex--;
-        final previousUrl = navigationHistory[currentHistoryIndex];
-
-        debugPrint('🔙 Navigating back to: $previousUrl');
-
-        // Check if going back to home page
-        bool isGoingToHome = previousUrl == 'https://www.afronika.com/' ||
-            previousUrl == 'https://afronika.com/' ||
-            previousUrl.endsWith('afronika.com');
-
-        if (isGoingToHome) {
-          // Reset history when going back to home
-          debugPrint('🏠 Going back to home - resetting navigation');
-          navigationHistory.clear();
-          navigationHistory.add(previousUrl);
-          currentHistoryIndex = 0;
-        }
-
-        setState(() {
-          isLoading = true;
-          currentUrl = previousUrl;
-        });
-
-        await webViewController.loadRequest(Uri.parse(previousUrl));
-        return false; // Don't exit the app
-      }
-
-      // Also check WebView's built-in navigation
-      final canGoBack = await webViewController.canGoBack();
-      if (canGoBack) {
-        await webViewController.goBack();
-        return false;
-      }
-
-      // No more pages to go back to, show exit dialog
-      debugPrint('🔙 No more pages, showing exit dialog');
-      final shouldExit = await DialogHelper.showExitDialog(context);
-      return shouldExit ?? false;
-    } catch (e) {
-      debugPrint('❌ Error in back button handler: $e');
-      final shouldExit = await DialogHelper.showExitDialog(context);
-      return shouldExit ?? false;
-    }
-  }
-
-  // Add method to go forward in history (keeping this method but it won't be used since we removed the UI)
-  Future<void> _goForward() async {
-    if (currentHistoryIndex < navigationHistory.length - 1) {
-      currentHistoryIndex++;
-      final nextUrl = navigationHistory[currentHistoryIndex];
-
-      setState(() {
-        isLoading = true;
-        currentUrl = nextUrl;
-      });
-
-      await webViewController.loadRequest(Uri.parse(nextUrl));
-    }
-  }
-
-  Widget _buildLoadingIndicator() {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              alignment: Alignment.center,
+      builder: (context) =>
+          AlertDialog(
+            title: Row(
               children: [
-                SizedBox(
-                  width: 60,
-                  height: 60,
-                  child: CircularProgressIndicator(
-                    value: isLoading ? (loadingProgress / 100) : null,
-                    strokeWidth: 3,
-                    backgroundColor: Colors.grey[300],
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Colors.teal,
-                    ),
-                  ),
-                ),
-                Text(
-                  '${loadingProgress}%',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.teal,
-                  ),
-                ),
+                Icon(Icons.check_circle, color: Colors.green, size: 30),
+                SizedBox(width: 10),
+                Text('Payment Success'),
               ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Loading...',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[700],
-                fontWeight: FontWeight.w500,
+            content: Text('Your payment has been processed successfully!'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Future.delayed(Duration(milliseconds: 500), () {
+                    _refreshPage();
+                  });
+                },
+                child: Text('OK'),
               ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: 200,
-              child: Text(
-                _getLoadingMessage(),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[500],
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+            ],
+          ),
+    );
+  }
+
+  void _handlePaymentFailure() {
+    setState(() {
+      _isInPaymentFlow = false;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.error, color: Colors.white),
+            SizedBox(width: 12),
+            Text('Payment was cancelled or failed'),
           ],
+        ),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 4),
+        action: SnackBarAction(
+          label: 'RETRY',
+          textColor: Colors.white,
+          onPressed: () {
+            if (_paymentReturnUrl != null) {
+              webViewController.loadUrl(
+                  urlRequest: URLRequest(url: WebUri(_paymentReturnUrl!)));
+            }
+          },
         ),
       ),
     );
+
+    showDialog(
+      context: context,
+      builder: (context) =>
+          AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.error, color: Colors.red, size: 30),
+                SizedBox(width: 10),
+                Text('Payment Failed'),
+              ],
+            ),
+            content: Text(
+                'Your payment could not be processed. Would you like to try again?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  if (_paymentReturnUrl != null) {
+                    webViewController.loadUrl(urlRequest: URLRequest(
+                        url: WebUri(_paymentReturnUrl!)));
+                  }
+                },
+                child: Text('Try Again'),
+              ),
+            ],
+          ),
+    );
   }
 
-  String _getLoadingMessage() {
-    if (currentUrl.contains('afronika.com')) {
-      return 'Loading Afronika...';
-    } else if (currentUrl.contains('google.com')) {
-      return 'Connecting to Google...';
-    } else if (currentUrl.contains('facebook.com')) {
-      return 'Loading Facebook...';
-    } else {
-      final uri = Uri.tryParse(currentUrl);
-      if (uri != null) {
-        return 'Loading ${uri.host}...';
+  void _resetPaymentFlow() {
+    setState(() {
+      _isInPaymentFlow = false;
+      _paymentReturnUrl = null;
+    });
+    _paymentCheckTimer?.cancel();
+  }
+
+  // Future<void> _loadInitialUrl() async {
+  //   await AfronikaBrowserHelper.loadInitialUrl(
+  //     context: context,
+  //     webViewController: webViewController,
+  //     initialUrl: currentUrl,
+  //   );
+  // }
+
+  Future<void> _refreshPage() async {
+    await AfronikaBrowserHelper.refreshPage(
+      context: context,
+      webViewController: webViewController,
+      onStateUpdate: (isRefreshing, hasError, errorMessage) {
+        setState(() {
+          this.isRefreshing = isRefreshing;
+          this.hasError = hasError;
+          this.errorMessage = errorMessage;
+        });
+      },
+    );
+  }
+
+  Future<bool> _onWillPop() async {
+    if (_isInPaymentFlow) {
+      final shouldExit = await showDialog<bool>(
+        context: context,
+        builder: (context) =>
+            AlertDialog(
+              title: Text('Payment in Progress'),
+              content: Text(
+                  'You are currently in a payment process. Are you sure you want to go back?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text('Stay'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    _resetPaymentFlow();
+                    Navigator.of(context).pop(true);
+                  },
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  child: Text('Go Back'),
+                ),
+              ],
+            ),
+      );
+
+      if (shouldExit == true) {
+        _resetPaymentFlow();
       }
-      return 'Please wait...';
+      return shouldExit ?? false;
     }
+
+    return await AfronikaBrowserHelper.handleWillPop(
+      context: context,
+      currentUrl: currentUrl,
+      webViewController: webViewController,
+      onStateUpdate: (isLoading, url) {
+        setState(() {
+          this.isLoading = isLoading;
+          currentUrl = url;
+        });
+      },
+    );
   }
 
   @override
@@ -890,26 +780,225 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
         body: SafeArea(
           child: Stack(
             children: [
-              // Main WebView
+              // Main InAppWebView
               Positioned.fill(
-                child: WebViewWidget(controller: webViewController),
+                child: InAppWebView(
+                  key: webViewKey,
+                  initialUrlRequest: URLRequest(url: WebUri(currentUrl)),
+                  initialOptions: options,
+                  onWebViewCreated: (controller) {
+                    webViewController = controller;
+                    _setupJavaScriptHandlers();
+                  },
+                  onLoadStart: (controller, url) {
+                    setState(() {
+                      isLoading = true;
+                      currentUrl = url?.toString() ?? currentUrl;
+                      hasError = false;
+                      errorMessage = "";
+                    });
+
+                    AfronikaBrowserHelper.updateNavigationHistory(
+                        url?.toString() ?? currentUrl);
+
+                    if (_isPaymentUrl(url?.toString() ?? "") &&
+                        !_isInPaymentFlow) {
+                      _handlePaymentFlow(url?.toString() ?? "");
+                    }
+                  },
+                  onLoadStop: (controller, url) async {
+                    setState(() {
+                      isLoading = false;
+                      isRefreshing = false;
+                      currentUrl = url?.toString() ?? currentUrl;
+                    });
+
+                    // Inject JavaScript
+                    await controller.evaluateJavascript(
+                        source: enhancedInjectedJavaScript);
+                  },
+                  onProgressChanged: (controller, progress) {
+                    setState(() {
+                      loadingProgress = progress / 100;
+                      isLoading = progress < 100;
+                    });
+                  },
+                  onLoadError: (controller, url, code, message) {
+                    final errorMsg = AfronikaBrowserHelper.getErrorMessage(
+                        code as WebResourceError, message);
+
+                    setState(() {
+                      isRefreshing = false;
+                      hasError = true;
+                      errorMessage = errorMsg;
+                    });
+
+                    if (_isInPaymentFlow) {
+                      _handlePaymentFailure();
+                    }
+
+                    debugPrint('WebView Error: $message');
+
+                    Future.delayed(const Duration(milliseconds: 500), () {
+                      if (mounted && hasError) {
+                        AfronikaBrowserHelper.showErrorDialog(
+                          context: context,
+                          errorMessage: errorMessage,
+                          onRetry: _refreshPage,
+                        );
+                      }
+                    });
+                  },
+                  shouldOverrideUrlLoading: (controller,
+                      navigationAction) async {
+                    final url = navigationAction.request.url?.toString() ?? "";
+
+                    debugPrint('Navigation request: $url');
+
+                    // Special handling for payment URLs
+                    if (_isPaymentUrl(url)) {
+                      debugPrint(
+                          'Payment URL detected, allowing in-app navigation: $url');
+                      return NavigationActionPolicy.ALLOW;
+                    }
+
+                    // Handle external URLs
+                    if (UrlLauncherHelper.isExternalUrl(url)) {
+                      UrlLauncherHelper.handleExternalUrl(url, context);
+                      return NavigationActionPolicy.CANCEL;
+                    }
+
+                    // Check if it's a Facebook link
+                    if (UrlLauncherHelper.isFacebookUrl(url)) {
+                      UrlLauncherHelper.handleFacebookUrl(url, context);
+                      return NavigationActionPolicy.CANCEL;
+                    }
+
+                    // Check for other social media links
+                    if (UrlLauncherHelper.isSocialMediaUrl(url)) {
+                      UrlLauncherHelper.handleSocialMediaUrl(url, context);
+                      return NavigationActionPolicy.CANCEL;
+                    }
+
+                    // Allow normal web navigation for your main domain
+                    if (url.contains('afronika.com')) {
+                      return NavigationActionPolicy.ALLOW;
+                    }
+
+                    // For any other external links, open in external browser
+                    if (!url.startsWith('https://www.afronika.com') &&
+                        !url.startsWith('https://afronika.com') &&
+                        !_isPaymentUrl(url)) {
+                      UrlLauncherHelper.handleExternalUrl(url, context);
+                      return NavigationActionPolicy.CANCEL;
+                    }
+
+                    return NavigationActionPolicy.ALLOW;
+                  },
+                ),
               ),
 
-              // Progress indicator (top bar style)
+              // Progress indicator
               if (isLoading)
                 Positioned(
                   top: 0,
                   left: 0,
                   right: 0,
                   child: LinearProgressIndicator(
-                    value: loadingProgress / 100,
+                    value: loadingProgress,
                     backgroundColor: Colors.grey[200],
-                    valueColor: const AlwaysStoppedAnimation(Colors.teal),
+                    valueColor: AlwaysStoppedAnimation(
+                      _isInPaymentFlow ? Colors.orange : Colors.teal,
+                    ),
                     minHeight: 3,
                   ),
                 ),
 
-              // Menu button (top right)
+              // Payment Flow Indicator
+              if (_isInPaymentFlow)
+                Positioned(
+                  top: 8,
+                  left: 16,
+                  right: 16,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(Colors.white),
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Payment in Progress',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Spacer(),
+                        GestureDetector(
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) =>
+                                  AlertDialog(
+                                    title: Text('Payment Status'),
+                                    content: Text(
+                                        'Your payment is being processed. Please wait for completion or cancellation.'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.of(context).pop(),
+                                        child: Text('OK'),
+                                      ),
+                                      if (_paymentReturnUrl != null)
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                            _resetPaymentFlow();
+                                            webViewController.loadUrl(
+                                                urlRequest: URLRequest(
+                                                    url: WebUri(
+                                                        _paymentReturnUrl!)));
+                                          },
+                                          style: TextButton.styleFrom(
+                                              foregroundColor: Colors.red),
+                                          child: Text('Back to Cart'),
+                                        ),
+                                    ],
+                                  ),
+                            );
+                          },
+                          child: Icon(
+                            Icons.info_outline,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              // Menu button
               Positioned(
                 bottom: 170,
                 left: 16,
@@ -931,7 +1020,7 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
                       ),
                       child: Icon(
                         Icons.info_outline,
-                        color: Colors.teal,
+                        color: _isInPaymentFlow ? Colors.orange : Colors.teal,
                         size: 24,
                       ),
                     ),
@@ -939,205 +1028,78 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
                 ),
               ),
 
-              // Error overlay
-              if (hasError && !isLoading)
-                Positioned.fill(
-                  child: Container(
-                    color: Colors.white,
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            size: 80,
-                            color: Colors.orange,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Oops! Something went wrong',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 32),
-                            child: Text(
-                              errorMessage.isNotEmpty
-                                  ? errorMessage
-                                  : 'Unable to load the page',
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: Colors.grey[600],
+              // Payment Back Button
+              if (_isInPaymentFlow && _paymentReturnUrl != null)
+                Positioned(
+                  bottom: 230,
+                  left: 16,
+                  child: Material(
+                    elevation: 4,
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.red.withOpacity(0.9),
+                    child: InkWell(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) =>
+                              AlertDialog(
+                                title: Text('Cancel Payment'),
+                                content: Text(
+                                    'Are you sure you want to cancel the payment and return to cart?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(),
+                                    child: Text('Continue Payment'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                      _resetPaymentFlow();
+                                      webViewController.loadUrl(
+                                          urlRequest: URLRequest(
+                                              url: WebUri(_paymentReturnUrl!)));
+                                    },
+                                    style: TextButton.styleFrom(
+                                        foregroundColor: Colors.red),
+                                    child: Text('Cancel Payment'),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          ElevatedButton.icon(
-                            onPressed: _refreshPage,
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Try Again'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.teal,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 12,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                        ],
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        child: Icon(
+                          Icons.arrow_back,
+                          color: Colors.white,
+                          size: 24,
+                        ),
                       ),
                     ),
                   ),
+                ),
+
+              // Error overlay
+              if (hasError && !isLoading)
+                ErrorView(
+                  message: errorMessage,
+                  onRetry: _refreshPage,
                 ),
 
               // Cookie Consent Banner
               if (_showCookieBanner)
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: AnimatedBuilder(
-                    animation: _bannerAnimation,
-                    builder: (context, child) {
-                      return Transform.translate(
-                        offset: Offset(0, 100 * (1 - _bannerAnimation.value)),
-                        child: Opacity(
-                          opacity: _bannerAnimation.value,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.grey[900],
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.3),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, -2),
-                                ),
-                              ],
-                            ),
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.cookie,
-                                      color: Colors.amber[700],
-                                      size: 24,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        'Cookie Consent',
-                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'We use cookies to enhance your browsing experience, analyze site traffic, and personalize content. By clicking "Accept All", you consent to our use of cookies.',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Colors.grey[300],
-                                    height: 1.4,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    TextButton(
-                                      onPressed: () => _handleCookieConsent(false),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: Colors.grey[400],
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 20,
-                                          vertical: 10,
-                                        ),
-                                      ),
-                                      child: const Text('Decline'),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    ElevatedButton(
-                                      onPressed: () => _handleCookieConsent(true),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.teal,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 20,
-                                          vertical: 10,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                      ),
-                                      child: const Text('Accept All'),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                CookieBanner(
+                  animation: _bannerAnimation,
+                  onConsent: _handleCookieConsent,
                 ),
 
-              // Refresh button (keeping only the refresh button, removing navigation buttons)
-              Positioned(
-                bottom: _showCookieBanner ? 180 : 80,
-                left: 16,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  child: Material(
-                    elevation: 6,
-                    shape: const CircleBorder(),
-                    color: Colors.white,
-                    child: InkWell(
-                      onTap: _refreshPage,
-                      borderRadius: BorderRadius.circular(28),
-                      child: Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: isRefreshing
-                            ? const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(Colors.teal),
-                          ),
-                        )
-                            : const Icon(
-                          Icons.refresh,
-                          color: Colors.teal,
-                          size: 28,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+              // Refresh Floating Button
+              RefreshFloatingButton(
+                isRefreshing: isRefreshing,
+                showCookieBanner: _showCookieBanner,
+                onRefresh: _refreshPage,
               ),
             ],
           ),
@@ -1146,15 +1108,135 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp> with TickerProv
     );
   }
 
+  void _setupJavaScriptHandlers() {
+    // Payment flow started
+    webViewController.addJavaScriptHandler(
+      handlerName: 'paymentFlowStarted',
+      callback: (args) {
+        debugPrint('Payment flow started from JS: ${args[0]}');
+      },
+    );
+
+    // Payment button clicked
+    webViewController.addJavaScriptHandler(
+      handlerName: 'paymentButtonClicked',
+      callback: (args) {
+        debugPrint('Payment button clicked: ${args[0]}');
+        HapticFeedback.selectionClick();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation(Colors.white),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Text('Initiating payment...'),
+              ],
+            ),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      },
+    );
+
+    // Payment processing
+    webViewController.addJavaScriptHandler(
+      handlerName: 'paymentProcessing',
+      callback: (args) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation(Colors.white),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Text(args[0] ?? 'Processing...'),
+              ],
+            ),
+            duration: Duration(seconds: 3),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      },
+    );
+
+    // Payment success
+    webViewController.addJavaScriptHandler(
+      handlerName: 'paymentSuccess',
+      callback: (args) {
+        _handlePaymentSuccess();
+      },
+    );
+
+    // Payment failed
+    webViewController.addJavaScriptHandler(
+      handlerName: 'paymentFailed',
+      callback: (args) {
+        _handlePaymentFailure();
+      },
+    );
+
+    // External links
+    webViewController.addJavaScriptHandler(
+      handlerName: 'externalLink',
+      callback: (args) {
+        final url = args[0];
+        final platform = args.length > 1 ? args[1] : null;
+
+        if (platform == 'facebook') {
+          UrlLauncherHelper.handleFacebookUrl(url, context);
+        } else if (platform == 'social') {
+          UrlLauncherHelper.handleSocialMediaUrl(url, context);
+        } else {
+          UrlLauncherHelper.handleExternalUrl(url, context);
+        }
+      },
+    );
+
+    // Bridge ready
+    webViewController.addJavaScriptHandler(
+      handlerName: 'bridgeReady',
+      callback: (args) {
+        debugPrint('JavaScript bridge is ready');
+      },
+    );
+  }
+
   void _openMenu(BuildContext context) {
+    if (_isInPaymentFlow) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Menu is disabled during payment process'),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => MenuBottomSheetWidget(
-        onPrivacyPolicyTap: () => _navigateToPrivacyPolicy(),
-        onAboutAppTap: () => _navigateToAboutApp(),
-        onContactTap: () => _navigateToContact(),
-      ),
+      builder: (_) =>
+          MenuBottomSheetWidget(
+            onPrivacyPolicyTap: () => _navigateToPrivacyPolicy(),
+            onAboutAppTap: () => _navigateToAboutApp(),
+            onContactTap: () => _navigateToContact(),
+          ),
     );
   }
 

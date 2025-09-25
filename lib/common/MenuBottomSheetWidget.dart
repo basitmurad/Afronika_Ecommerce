@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-
-import 'MenuItemWidget.dart';
 
 class MenuBottomSheetWidget extends StatelessWidget {
   final VoidCallback onPrivacyPolicyTap;
@@ -9,37 +6,24 @@ class MenuBottomSheetWidget extends StatelessWidget {
   final VoidCallback onContactTap;
 
   const MenuBottomSheetWidget({
-    super.key,
+    Key? key,
     required this.onPrivacyPolicyTap,
     required this.onAboutAppTap,
     required this.onContactTap,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    HapticFeedback.selectionClick();
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      padding: EdgeInsets.all(20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle bar
           Container(
-            margin: const EdgeInsets.only(top: 12),
             width: 40,
             height: 4,
             decoration: BoxDecoration(
@@ -47,64 +31,44 @@ class MenuBottomSheetWidget extends StatelessWidget {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-
-          // Menu title
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.apps,
-                  color: Colors.teal,
-                  size: 28,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Menu',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const Divider(height: 1),
-
-          // Menu items
-          MenuItemWidget(
+          SizedBox(height: 20),
+          _buildMenuButton(
             icon: Icons.privacy_tip,
             title: 'Privacy Policy',
-            subtitle: 'Read our privacy policy',
-            onTap: () {
-              Navigator.pop(context);
-              onPrivacyPolicyTap();
-            },
+            onTap: onPrivacyPolicyTap,
           ),
-          MenuItemWidget(
+          _buildMenuButton(
             icon: Icons.info,
             title: 'About App',
-            subtitle: 'Learn about Afronika',
-            onTap: () {
-              Navigator.pop(context);
-              onAboutAppTap();
-            },
+            onTap: onAboutAppTap,
           ),
-          MenuItemWidget(
+          _buildMenuButton(
             icon: Icons.contact_support,
-            title: 'Contact',
-            subtitle: 'Get in touch with us',
-            onTap: () {
-              Navigator.pop(context);
-              onContactTap();
-            },
+            title: 'Contact Us',
+            onTap: onContactTap,
           ),
-
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Close'),
+          ),
         ],
       ),
     );
   }
+
+  Widget _buildMenuButton({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.teal),
+      title: Text(title),
+      onTap: onTap,
+      contentPadding: EdgeInsets.zero,
+    );
+  }
 }
+
+

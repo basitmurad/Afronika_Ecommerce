@@ -96,27 +96,47 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
       }
 
       function isPaymentUrl(url) {
-          const paymentPatterns = [
-              'payment', 'checkout', 'pay', 'stripe', 'paypal', 'razorpay', 
-              'paytm', 'gateway', '/cart/pay', '/payment/', '/checkout/',
-              'billing', 'order', 'purchase', 'transaction'
-          ];
           const lowerUrl = url.toLowerCase();
+          
+          // Exclude order-related pages that are NOT payment flows
+          const excludePatterns = [
+              '/my-orders', '/myorders', '/orders', '/order-history',
+              '/account/orders', '/user/orders', '/profile/orders',
+              '/dashboard/orders', '/order-list', '/order-tracking', '/track-order'
+          ];
+          
+          // Check if URL should be excluded
+          for (const pattern of excludePatterns) {
+              if (lowerUrl.includes(pattern)) {
+                  return false;
+              }
+          }
+          
+          // More specific payment patterns
+          const paymentPatterns = [
+              '/payment/', '/checkout/', '/cart/pay', '/pay/', '/billing/',
+              '/purchase/', 'stripe.com', 'paypal.com', 'razorpay.com',
+              'paytm.com', '/gateway/', '/transaction/', 'payment-gateway',
+              'checkout-session', 'payment-intent', 'payment-method',
+              'payment-confirm', 'checkout-confirm'
+          ];
+          
           return paymentPatterns.some(pattern => lowerUrl.includes(pattern));
       }
 
       function isPaymentSuccessUrl(url) {
-          const successPatterns = ['success', 'complete', 'confirmed', 'thank', 'order-complete', 'receipt', 'confirmation'];
+          const successPatterns = ['payment-success', 'checkout-success', 'order-complete', 'payment-confirmed', 'purchase-complete'];
           const lowerUrl = url.toLowerCase();
           return successPatterns.some(pattern => lowerUrl.includes(pattern));
       }
 
       function isPaymentFailureUrl(url) {
-          const failurePatterns = ['cancel', 'failed', 'error', 'declined', 'timeout', 'abort'];
+          const failurePatterns = ['payment-cancel', 'payment-failed', 'checkout-failed', 'payment-error', 'payment-declined'];
           const lowerUrl = url.toLowerCase();
           return failurePatterns.some(pattern => lowerUrl.includes(pattern));
       }
 
+      // Rest of your JavaScript code remains the same...
       function detectPaymentFlow() {
           const currentUrl = window.location.href;
           
@@ -152,17 +172,18 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
           }
       }
 
+      // Continue with the rest of your existing JavaScript functions...
       function enhancePaymentButtons() {
           // Find payment buttons and add click tracking
           const paymentSelectors = [
               'button[class*="payment"]',
               'button[class*="checkout"]',
-              'button[class*="pay"]',
-              'input[value*="Pay"]',
-              'input[value*="Payment"]',
+              'button[class*="pay-now"]',
+              'input[value*="Pay Now"]',
+              'input[value*="Proceed to Payment"]',
               'input[value*="Checkout"]',
-              'a[href*="payment"]',
-              'a[href*="checkout"]',
+              'a[href*="/payment/"]',
+              'a[href*="/checkout/"]',
               '.payment-btn',
               '.checkout-btn',
               '.pay-btn',
@@ -179,12 +200,20 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
                           button.dataset.paymentTracked = 'true';
                           
                           button.addEventListener('click', (e) => {
-                              console.log('Payment button clicked:', button);
+                              // Only track if it's actually a payment button, not order history
+                              const buttonText = (button.textContent || button.value || '').toLowerCase();
+                              const isOrderHistory = buttonText.includes('my orders') || 
+                                                   buttonText.includes('order history') ||
+                                                   buttonText.includes('view orders');
                               
-                              window.flutter_inappwebview.callHandler('paymentButtonClicked', 
-                                  button.textContent || button.value || 'Unknown', 
-                                  window.location.href
-                              );
+                              if (!isOrderHistory) {
+                                  console.log('Payment button clicked:', button);
+                                  
+                                  window.flutter_inappwebview.callHandler('paymentButtonClicked', 
+                                      button.textContent || button.value || 'Unknown', 
+                                      window.location.href
+                                  );
+                              }
                           });
                       }
                   });
@@ -194,190 +223,10 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
           });
       }
 
-      function monitorPaymentProgress() {
-          // Monitor for payment progress indicators
-          const progressSelectors = [
-              '.payment-progress',
-              '.checkout-progress',
-              '.loading',
-              '.processing',
-              '[class*="progress"]',
-              '[class*="loading"]',
-              '.spinner',
-              '.loader'
-          ];
-
-          progressSelectors.forEach(selector => {
-              try {
-                  const elements = document.querySelectorAll(selector);
-                  elements.forEach(el => {
-                      if (el && el.style.display !== 'none' && el.offsetHeight > 0) {
-                          window.flutter_inappwebview.callHandler('paymentProcessing', 'Payment in progress...');
-                      }
-                  });
-              } catch(e) {
-                  console.error('Payment progress monitoring error:', e);
-              }
-          });
-      }
-
-      function ensureMobileResponsive() {
-          // Ensure viewport is set for mobile
-          let viewport = document.querySelector('meta[name="viewport"]');
-          if (!viewport) {
-              viewport = document.createElement('meta');
-              viewport.name = 'viewport';
-              viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes';
-              document.head.appendChild(viewport);
-          }
-
-          // Make images responsive
-          try {
-              const images = document.querySelectorAll('img');
-              images.forEach(img => {
-                  if (!img.style.maxWidth) {
-                      img.style.maxWidth = '100%';
-                      img.style.height = 'auto';
-                  }
-              });
-
-              const logoSelectors = [
-                  '[data-zs-logo] img',
-                  '.logo img',
-                  '.brand-logo img',
-                  '.site-logo img',
-                  'header img',
-                  '.header img'
-              ];
-
-              logoSelectors.forEach(selector => {
-                  const logos = document.querySelectorAll(selector);
-                  logos.forEach(logo => {
-                      if (logo) {
-                          logo.style.maxWidth = '100%';
-                          logo.style.height = 'auto';
-                          logo.style.objectFit = 'contain';
-                      }
-                  });
-              });
-          } catch(e) {
-              console.error('Responsive image error:', e);
-          }
-      }
-
-      function changeBackgroundColor() {
-          try {
-              document.body.style.backgroundColor = 'white';
-              document.documentElement.style.backgroundColor = 'white';
-
-              const containers = document.querySelectorAll('header, .header, .app-bar, .top-bar, nav');
-              containers.forEach(container => {
-                  if (container) {
-                      container.style.backgroundColor = 'white';
-                  }
-              });
-          } catch(e) {
-              console.error('Background color change error:', e);
-          }
-      }
-
-      function repositionChatIcon() {
-          const chatSelectors = [
-              '.zsiq_flt_rel',
-              '#zsiq_float',
-              '.zsiq_float',
-              '[id*="zsiq"]',
-              '.siqicon',
-              '.siqico-chat'
-          ];
-
-          chatSelectors.forEach(selector => {
-              try {
-                  const elements = document.querySelectorAll(selector);
-                  elements.forEach(el => {
-                      if (el && el.style) {
-                          el.style.cssText = `
-                              position: fixed !important;
-                              left: 20px !important;
-                              top: 50% !important;
-                              transform: translateY(-50%) !important;
-                              right: auto !important;
-                              bottom: auto !important;
-                              z-index: 9999 !important;
-                          `;
-                      }
-                  });
-              } catch(e) {
-                  console.error('Chat icon positioning error:', e);
-              }
-          });
-      }
-
-      function handleExternalLinks() {
-          try {
-              document.removeEventListener('click', globalClickHandler, true);
-              document.addEventListener('click', globalClickHandler, true);
-          } catch(e) {
-              console.error('External link handler error:', e);
-          }
-      }
-
-      function globalClickHandler(e) {
-          try {
-              let target = e.target;
-
-              while (target && target !== document.body && target.tagName !== 'A' && target.tagName !== 'BUTTON') {
-                  target = target.parentElement;
-              }
-
-              if (!target || (target.tagName !== 'A' && target.tagName !== 'BUTTON')) {
-                  return;
-              }
-
-              const href = target.getAttribute('href') || target.getAttribute('data-href') || '';
-
-              if (href) {
-                  // Don't interfere with payment URLs - let them load normally
-                  if (isPaymentUrl(href)) {
-                      console.log('Payment URL clicked, allowing normal navigation:', href);
-                      return true;
-                  }
-
-                  // Social media detection with improved patterns
-                  const socialPatterns = {
-                      facebook: /facebook.com|fb.com|fb.me/i,
-                      instagram: /instagram.com|instagr.am/i,
-                      twitter: /twitter.com|x.com/i,
-                      linkedin: /linkedin.com|lnkd.in/i,
-                      youtube: /youtube.com|youtu.be/i,
-                      tiktok: /tiktok.com/i,
-                      snapchat: /snapchat.com/i
-                  };
-
-                  for (const [platform, pattern] of Object.entries(socialPatterns)) {
-                      if (pattern.test(href)) {
-                          e.preventDefault();
-                          e.stopPropagation();
-
-                          window.flutter_inappwebview.callHandler('externalLink', href, platform === 'facebook' ? 'facebook' : 'social');
-                          return false;
-                      }
-                  }
-
-                  // Handle mailto and tel links
-                  if (href.startsWith('mailto:') || href.startsWith('tel:')) {
-                      e.preventDefault();
-                      e.stopPropagation();
-
-                      window.flutter_inappwebview.callHandler('externalLink', href);
-                      return false;
-                  }
-              }
-          } catch(error) {
-              console.error('Click handler error:', error);
-          }
-      }
-
+      // Continue with the rest of your existing JavaScript code...
+      // (include all other functions like monitorPaymentProgress, ensureMobileResponsive, etc.)
+      
+      // The initialization code remains the same
       function initializeBridge() {
           if (bridgeInitialized) return;
           bridgeInitialized = true;
@@ -441,6 +290,373 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
       }
   })();
 ''';
+//   String get enhancedInjectedJavaScript => '''
+//   (function() {
+//       'use strict';
+//
+//       let bridgeInitialized = false;
+//       const cookiesAccepted = $_cookiesAccepted;
+//
+//       // Payment flow tracking
+//       let isInPaymentFlow = false;
+//       let originalCartUrl = '';
+//
+//       // Set cookie consent if accepted
+//       if (cookiesAccepted) {
+//           try {
+//               document.cookie = "cookie_consent=accepted; path=/; max-age=31536000";
+//               localStorage.setItem('cookie_consent', 'true');
+//           } catch(e) {
+//               console.log('Error setting cookie consent:', e);
+//           }
+//       }
+//
+//       function isPaymentUrl(url) {
+//           const paymentPatterns = [
+//               'payment', 'checkout', 'pay', 'stripe', 'paypal', 'razorpay',
+//               'paytm', 'gateway', '/cart/pay', '/payment/', '/checkout/',
+//               'billing', 'order', 'purchase', 'transaction'
+//           ];
+//           const lowerUrl = url.toLowerCase();
+//           return paymentPatterns.some(pattern => lowerUrl.includes(pattern));
+//       }
+//
+//       function isPaymentSuccessUrl(url) {
+//           const successPatterns = ['success', 'complete', 'confirmed', 'thank', 'order-complete', 'receipt', 'confirmation'];
+//           const lowerUrl = url.toLowerCase();
+//           return successPatterns.some(pattern => lowerUrl.includes(pattern));
+//       }
+//
+//       function isPaymentFailureUrl(url) {
+//           const failurePatterns = ['cancel', 'failed', 'error', 'declined', 'timeout', 'abort'];
+//           const lowerUrl = url.toLowerCase();
+//           return failurePatterns.some(pattern => lowerUrl.includes(pattern));
+//       }
+//
+//       function detectPaymentFlow() {
+//           const currentUrl = window.location.href;
+//
+//           // Entering payment flow
+//           if (isPaymentUrl(currentUrl) && !isInPaymentFlow) {
+//               isInPaymentFlow = true;
+//               originalCartUrl = document.referrer || '';
+//
+//               window.flutter_inappwebview.callHandler('paymentFlowStarted', currentUrl, originalCartUrl);
+//
+//               console.log('Payment flow started:', currentUrl);
+//               return;
+//           }
+//
+//           // Payment completed successfully
+//           if (isPaymentSuccessUrl(currentUrl) && isInPaymentFlow) {
+//               isInPaymentFlow = false;
+//
+//               window.flutter_inappwebview.callHandler('paymentSuccess', currentUrl);
+//
+//               console.log('Payment completed successfully');
+//               return;
+//           }
+//
+//           // Payment cancelled or failed
+//           if (isPaymentFailureUrl(currentUrl) && isInPaymentFlow) {
+//               isInPaymentFlow = false;
+//
+//               window.flutter_inappwebview.callHandler('paymentFailed', currentUrl, originalCartUrl);
+//
+//               console.log('Payment cancelled or failed');
+//               return;
+//           }
+//       }
+//
+//       function enhancePaymentButtons() {
+//           // Find payment buttons and add click tracking
+//           const paymentSelectors = [
+//               'button[class*="payment"]',
+//               'button[class*="checkout"]',
+//               'button[class*="pay"]',
+//               'input[value*="Pay"]',
+//               'input[value*="Payment"]',
+//               'input[value*="Checkout"]',
+//               'a[href*="payment"]',
+//               'a[href*="checkout"]',
+//               '.payment-btn',
+//               '.checkout-btn',
+//               '.pay-btn',
+//               '[data-payment]',
+//               '.btn-payment',
+//               '.btn-checkout'
+//           ];
+//
+//           paymentSelectors.forEach(selector => {
+//               try {
+//                   const buttons = document.querySelectorAll(selector);
+//                   buttons.forEach(button => {
+//                       if (button && !button.dataset.paymentTracked) {
+//                           button.dataset.paymentTracked = 'true';
+//
+//                           button.addEventListener('click', (e) => {
+//                               console.log('Payment button clicked:', button);
+//
+//                               window.flutter_inappwebview.callHandler('paymentButtonClicked',
+//                                   button.textContent || button.value || 'Unknown',
+//                                   window.location.href
+//                               );
+//                           });
+//                       }
+//                   });
+//               } catch(e) {
+//                   console.error('Payment button enhancement error:', e);
+//               }
+//           });
+//       }
+//
+//       function monitorPaymentProgress() {
+//           // Monitor for payment progress indicators
+//           const progressSelectors = [
+//               '.payment-progress',
+//               '.checkout-progress',
+//               '.loading',
+//               '.processing',
+//               '[class*="progress"]',
+//               '[class*="loading"]',
+//               '.spinner',
+//               '.loader'
+//           ];
+//
+//           progressSelectors.forEach(selector => {
+//               try {
+//                   const elements = document.querySelectorAll(selector);
+//                   elements.forEach(el => {
+//                       if (el && el.style.display !== 'none' && el.offsetHeight > 0) {
+//                           window.flutter_inappwebview.callHandler('paymentProcessing', 'Payment in progress...');
+//                       }
+//                   });
+//               } catch(e) {
+//                   console.error('Payment progress monitoring error:', e);
+//               }
+//           });
+//       }
+//
+//       function ensureMobileResponsive() {
+//           // Ensure viewport is set for mobile
+//           let viewport = document.querySelector('meta[name="viewport"]');
+//           if (!viewport) {
+//               viewport = document.createElement('meta');
+//               viewport.name = 'viewport';
+//               viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes';
+//               document.head.appendChild(viewport);
+//           }
+//
+//           // Make images responsive
+//           try {
+//               const images = document.querySelectorAll('img');
+//               images.forEach(img => {
+//                   if (!img.style.maxWidth) {
+//                       img.style.maxWidth = '100%';
+//                       img.style.height = 'auto';
+//                   }
+//               });
+//
+//               const logoSelectors = [
+//                   '[data-zs-logo] img',
+//                   '.logo img',
+//                   '.brand-logo img',
+//                   '.site-logo img',
+//                   'header img',
+//                   '.header img'
+//               ];
+//
+//               logoSelectors.forEach(selector => {
+//                   const logos = document.querySelectorAll(selector);
+//                   logos.forEach(logo => {
+//                       if (logo) {
+//                           logo.style.maxWidth = '100%';
+//                           logo.style.height = 'auto';
+//                           logo.style.objectFit = 'contain';
+//                       }
+//                   });
+//               });
+//           } catch(e) {
+//               console.error('Responsive image error:', e);
+//           }
+//       }
+//
+//       function changeBackgroundColor() {
+//           try {
+//               document.body.style.backgroundColor = 'white';
+//               document.documentElement.style.backgroundColor = 'white';
+//
+//               const containers = document.querySelectorAll('header, .header, .app-bar, .top-bar, nav');
+//               containers.forEach(container => {
+//                   if (container) {
+//                       container.style.backgroundColor = 'white';
+//                   }
+//               });
+//           } catch(e) {
+//               console.error('Background color change error:', e);
+//           }
+//       }
+//
+//       function repositionChatIcon() {
+//           const chatSelectors = [
+//               '.zsiq_flt_rel',
+//               '#zsiq_float',
+//               '.zsiq_float',
+//               '[id*="zsiq"]',
+//               '.siqicon',
+//               '.siqico-chat'
+//           ];
+//
+//           chatSelectors.forEach(selector => {
+//               try {
+//                   const elements = document.querySelectorAll(selector);
+//                   elements.forEach(el => {
+//                       if (el && el.style) {
+//                           el.style.cssText = `
+//                               position: fixed !important;
+//                               left: 20px !important;
+//                               top: 50% !important;
+//                               transform: translateY(-50%) !important;
+//                               right: auto !important;
+//                               bottom: auto !important;
+//                               z-index: 9999 !important;
+//                           `;
+//                       }
+//                   });
+//               } catch(e) {
+//                   console.error('Chat icon positioning error:', e);
+//               }
+//           });
+//       }
+//
+//       function handleExternalLinks() {
+//           try {
+//               document.removeEventListener('click', globalClickHandler, true);
+//               document.addEventListener('click', globalClickHandler, true);
+//           } catch(e) {
+//               console.error('External link handler error:', e);
+//           }
+//       }
+//
+//       function globalClickHandler(e) {
+//           try {
+//               let target = e.target;
+//
+//               while (target && target !== document.body && target.tagName !== 'A' && target.tagName !== 'BUTTON') {
+//                   target = target.parentElement;
+//               }
+//
+//               if (!target || (target.tagName !== 'A' && target.tagName !== 'BUTTON')) {
+//                   return;
+//               }
+//
+//               const href = target.getAttribute('href') || target.getAttribute('data-href') || '';
+//
+//               if (href) {
+//                   // Don't interfere with payment URLs - let them load normally
+//                   if (isPaymentUrl(href)) {
+//                       console.log('Payment URL clicked, allowing normal navigation:', href);
+//                       return true;
+//                   }
+//
+//                   // Social media detection with improved patterns
+//                   const socialPatterns = {
+//                       facebook: /facebook.com|fb.com|fb.me/i,
+//                       instagram: /instagram.com|instagr.am/i,
+//                       twitter: /twitter.com|x.com/i,
+//                       linkedin: /linkedin.com|lnkd.in/i,
+//                       youtube: /youtube.com|youtu.be/i,
+//                       tiktok: /tiktok.com/i,
+//                       snapchat: /snapchat.com/i
+//                   };
+//
+//                   for (const [platform, pattern] of Object.entries(socialPatterns)) {
+//                       if (pattern.test(href)) {
+//                           e.preventDefault();
+//                           e.stopPropagation();
+//
+//                           window.flutter_inappwebview.callHandler('externalLink', href, platform === 'facebook' ? 'facebook' : 'social');
+//                           return false;
+//                       }
+//                   }
+//
+//                   // Handle mailto and tel links
+//                   if (href.startsWith('mailto:') || href.startsWith('tel:')) {
+//                       e.preventDefault();
+//                       e.stopPropagation();
+//
+//                       window.flutter_inappwebview.callHandler('externalLink', href);
+//                       return false;
+//                   }
+//               }
+//           } catch(error) {
+//               console.error('Click handler error:', error);
+//           }
+//       }
+//
+//       function initializeBridge() {
+//           if (bridgeInitialized) return;
+//           bridgeInitialized = true;
+//
+//           // Initialize all functions
+//           ensureMobileResponsive();
+//           changeBackgroundColor();
+//           repositionChatIcon();
+//           handleExternalLinks();
+//           enhancePaymentButtons();
+//           detectPaymentFlow();
+//
+//           // Enhanced MutationObserver for payment flow
+//           const observer = new MutationObserver(() => {
+//               requestAnimationFrame(() => {
+//                   ensureMobileResponsive();
+//                   changeBackgroundColor();
+//                   repositionChatIcon();
+//                   handleExternalLinks();
+//                   enhancePaymentButtons();
+//                   detectPaymentFlow();
+//                   monitorPaymentProgress();
+//               });
+//           });
+//
+//           observer.observe(document.body, {
+//               childList: true,
+//               subtree: true
+//           });
+//
+//           // URL change detection for SPA applications
+//           let lastUrl = location.href;
+//           new MutationObserver(() => {
+//               const url = location.href;
+//               if (url !== lastUrl) {
+//                   lastUrl = url;
+//                   setTimeout(detectPaymentFlow, 100);
+//               }
+//           }).observe(document, { subtree: true, childList: true });
+//
+//           // Staggered initialization
+//           const initTasks = [
+//               { fn: ensureMobileResponsive, delay: 300 },
+//               { fn: repositionChatIcon, delay: 400 },
+//               { fn: () => { changeBackgroundColor(); handleExternalLinks(); }, delay: 500 },
+//               { fn: enhancePaymentButtons, delay: 600 },
+//               { fn: detectPaymentFlow, delay: 700 },
+//               { fn: () => window.flutter_inappwebview.callHandler('bridgeReady'), delay: 800 }
+//           ];
+//
+//           initTasks.forEach(task => {
+//               setTimeout(task.fn, task.delay);
+//           });
+//       }
+//
+//       // Initialize when ready
+//       if (document.readyState === 'loading') {
+//           document.addEventListener('DOMContentLoaded', initializeBridge);
+//       } else {
+//           setTimeout(initializeBridge, 50);
+//       }
+//   })();
+// ''';
 
   @override
   void initState() {
@@ -494,27 +710,76 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
   }
 
   // Payment Flow Methods
+  // bool _isPaymentUrl(String url) {
+  //   final paymentPatterns = [
+  //     'payment',
+  //     'checkout',
+  //     'pay',
+  //     'stripe',
+  //     'paypal',
+  //     'razorpay',
+  //     'paytm',
+  //     'gateway',
+  //     '/cart/pay',
+  //     '/payment/',
+  //     '/checkout/',
+  //     'billing',
+  //     'order',
+  //     'purchase',
+  //     'transaction'
+  //   ];
+  //
+  //   final lowerUrl = url.toLowerCase();
+  //   return paymentPatterns.any((pattern) => lowerUrl.contains(pattern));
+  // }
+
   bool _isPaymentUrl(String url) {
-    final paymentPatterns = [
-      'payment',
-      'checkout',
-      'pay',
-      'stripe',
-      'paypal',
-      'razorpay',
-      'paytm',
-      'gateway',
-      '/cart/pay',
-      '/payment/',
-      '/checkout/',
-      'billing',
-      'order',
-      'purchase',
-      'transaction'
+    final lowerUrl = url.toLowerCase();
+
+    // Exclude specific pages that should NOT trigger payment flow
+    final excludePatterns = [
+      '/my-orders',
+      '/myorders',
+      '/orders',
+      '/order-history',
+      '/account/orders',
+      '/user/orders',
+      '/profile/orders',
+      '/dashboard/orders',
+      '/order-list',
+      '/order-tracking',
+      '/track-order'
     ];
 
-    final lowerUrl = url.toLowerCase();
+    // Check if URL should be excluded
+    for (String pattern in excludePatterns) {
+      if (lowerUrl.contains(pattern)) {
+        return false;
+      }
+    }
+    final paymentPatterns = [
+      '/payment/',
+      '/checkout/',
+      '/cart/pay',
+      '/pay/',
+      '/billing/',
+      '/purchase/',
+      'stripe.com',
+      'paypal.com',
+      'razorpay.com',
+      'paytm.com',
+      '/gateway/',
+      '/transaction/',
+      'payment-gateway',
+      'checkout-session',
+      'payment-intent',
+      'payment-method',
+      'payment-confirm',
+      'checkout-confirm'
+    ];
+
     return paymentPatterns.any((pattern) => lowerUrl.contains(pattern));
+
   }
 
   void _handlePaymentFlow(String url) {

@@ -41,11 +41,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.privacy_tip,
-                    color: Colors.teal,
-                    size: 40,
-                  ),
+                  const Icon(Icons.privacy_tip, color: Colors.teal, size: 40),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
@@ -61,7 +57,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Last updated: January 2025',
+                          'Last updated: September 2025',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey[600],
@@ -78,62 +74,104 @@ class PrivacyPolicyScreen extends StatelessWidget {
 
             _buildSection(
               title: '1. Information We Collect',
-              content: 'We collect information you provide directly to us, such as when you create an account, '
-                  'make a purchase, or contact us for support. This may include your name, email address, '
-                  'phone number, and payment information.',
+              content:
+              'We collect personal information you provide during account creation or when placing an order. This includes:\n\n'
+                  '- Full Name (required)\n'
+                  '- Email Address (required)\n'
+                  '- Phone Number (optional, for delivery updates or support)\n'
+                  '- Shipping and Billing Addresses (only when placing orders)\n'
+                  '- Payment Information (processed securely, never stored)\n'
+                  '- Login Credentials (for account security)\n\n'
+                  'We may also collect technical data such as device type, IP address (for fraud prevention), and anonymized usage statistics to improve app performance.',
             ),
 
             _buildSection(
               title: '2. How We Use Your Information',
-              content: 'We use the information we collect to provide, maintain, and improve our services, '
-                  'process transactions, send you technical notices and support messages, and respond to '
-                  'your comments and questions.',
+              content:
+              'We use your information strictly for:\n\n'
+                  '- Account creation and order processing\n'
+                  '- Customer communication (order updates, support)\n'
+                  '- Optional marketing (only with your consent)\n'
+                  '- Improving app performance\n'
+                  '- Fraud prevention and legal compliance\n\n'
+                  'We do not use your information for advertising tracking.',
             ),
 
             _buildSection(
-              title: '3. Information Sharing',
-              content: 'We do not sell, trade, or otherwise transfer your personal information to third parties '
-                  'without your consent, except as necessary to provide our services or as required by law.',
+              title: '3. Cookies and Similar Technologies',
+              content:
+              'Our app uses cookies only to:\n\n'
+                  '- Remember your login status\n'
+                  '- Save your shopping cart\n'
+                  '- Store your preferences (currency, language)\n'
+                  '- Improve app functionality\n\n'
+                  '⚠️ We do NOT track you across other websites or apps, and we do NOT share cookies with advertisers or data brokers.',
             ),
 
             _buildSection(
-              title: '4. Data Security',
-              content: 'We implement appropriate technical and organizational measures to protect your personal '
-                  'information against unauthorized access, alteration, disclosure, or destruction.',
+              title: '4. App Tracking Transparency (iOS)',
+              content:
+              'On iOS, if you select "Ask App Not to Track", we will not collect any tracking data. '
+                  'App functionality will remain the same. If you allow tracking, only anonymized analytics are used for app improvements. '
+                  'We do not share personal data with advertisers.',
             ),
 
             _buildSection(
-              title: '5. Your Rights',
-              content: 'You have the right to access, update, or delete your personal information. You may also '
-                  'opt-out of certain communications from us. To exercise these rights, please contact us.',
+              title: '5. Information Sharing',
+              content:
+              'We do not sell or rent your personal information.\n\n'
+                  'We only share your data with:\n'
+                  '- Payment processors\n'
+                  '- Delivery partners\n'
+                  '- Customer support providers\n\n'
+                  'All under strict data protection agreements. Data may also be shared with legal authorities if required by law.',
             ),
 
             _buildSection(
-              title: '6. Cookies',
-              content: 'We use cookies and similar tracking technologies to track activity on our service and '
-                  'hold certain information. You can instruct your browser to refuse all cookies or to '
-                  'indicate when a cookie is being sent.',
+              title: '6. Your Rights',
+              content:
+              'You have the right to:\n\n'
+                  '- Access, update, or delete your personal information\n'
+                  '- Opt out of marketing anytime\n'
+                  '- Control location and tracking permissions in your device settings\n'
+                  '- Request a copy of your data\n\n'
+                  'iOS users can also manage tracking permissions in Settings > Privacy & Security > Tracking.',
             ),
 
             _buildSection(
-              title: '7. Children\'s Privacy',
-              content: 'Our service is not directed to children under 13. We do not knowingly collect personal '
-                  'information from children under 13. If you are a parent and believe your child has '
-                  'provided us with personal information, please contact us.',
+              title: '7. Data Security',
+              content:
+              'We use industry-standard security measures:\n\n'
+                  '- SSL/TLS encryption\n'
+                  '- Secure storage with restricted access\n'
+                  '- Regular audits and vulnerability testing\n\n'
+                  'While we take strong precautions, no method of transmission is 100% secure.',
             ),
 
             _buildSection(
-              title: '8. Changes to This Policy',
-              content: 'We may update our Privacy Policy from time to time. We will notify you of any changes '
-                  'by posting the new Privacy Policy on this page and updating the "Last updated" date.',
+              title: '8. Data Retention',
+              content:
+              '- Account data is kept until you delete your account\n'
+                  '- Order history is retained as required by law (typically 7 years)\n'
+                  '- Marketing data is retained until you unsubscribe\n'
+                  '- Analytics data is anonymized for long-term app improvement',
             ),
 
             _buildSection(
-              title: '9. Contact Us',
-              content: 'If you have any questions about this Privacy Policy, please contact us at:\n\n'
-                  'Email: support@afronika.com\n'
-                  'Phone: +234 816 005 239 0\n'
-                  'Address: Suite C2 Justice John Tsoho Street, 2nd Floor Fatima Plaza, Wuye Abuja, Federal Capital Territory 902101,Nigeria',
+              title: '9. Children\'s Privacy',
+              content:
+              'Our app is not intended for children under 13. We do not knowingly collect data from children. '
+                  'If we learn we have collected such data, it will be deleted immediately.',
+            ),
+
+            _buildSection(
+              title: '10. Contact Us',
+              content:
+              'Afronika E-commerce Team\n\n'
+                  '📧 Email: contact@afronika.com\n'
+                  '📧 Data Protection Officer: contact@afronika.com\n'
+                  '🏢 Address: TORKYAA STREET, NORTH BANK, MAKURDI, BENUE STATE, NIGERIA\n'
+                  '📧 iOS Privacy Concerns: support@afronika.com',
             ),
 
             const SizedBox(height: 40),

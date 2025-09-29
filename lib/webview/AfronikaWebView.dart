@@ -59,13 +59,12 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
     android: AndroidInAppWebViewOptions(
       useHybridComposition: true,
       useShouldInterceptRequest: false,
-      // adjust as needed
       hardwareAcceleration: false,
-      // add this line
       disableDefaultErrorPage: false,
-      // keep default
-
       mixedContentMode: AndroidMixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
+      supportMultipleWindows: false,
+      useWideViewPort: false,
+
     ),
     ios: IOSInAppWebViewOptions(
       allowsInlineMediaPlayback: true,
@@ -96,94 +95,73 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
       }
 
       function isPaymentUrl(url) {
-          const lowerUrl = url.toLowerCase();
-          
-          // Exclude order-related pages that are NOT payment flows
-          const excludePatterns = [
-              '/my-orders', '/myorders', '/orders', '/order-history',
-              '/account/orders', '/user/orders', '/profile/orders',
-              '/dashboard/orders', '/order-list', '/order-tracking', '/track-order'
-          ];
-          
-          // Check if URL should be excluded
-          for (const pattern of excludePatterns) {
-              if (lowerUrl.includes(pattern)) {
-                  return false;
-              }
-          }
-          
-          // More specific payment patterns
           const paymentPatterns = [
-              '/payment/', '/checkout/', '/cart/pay', '/pay/', '/billing/',
-              '/purchase/', 'stripe.com', 'paypal.com', 'razorpay.com',
-              'paytm.com', '/gateway/', '/transaction/', 'payment-gateway',
-              'checkout-session', 'payment-intent', 'payment-method',
-              'payment-confirm', 'checkout-confirm'
+              'payment', 'checkout', 'pay', 'stripe', 'paypal', 'razorpay',
+              'paytm', 'gateway', '/cart/pay', '/payment/', '/checkout/',
+              'billing', 'order', 'purchase', 'transaction'
           ];
-          
+          const lowerUrl = url.toLowerCase();
           return paymentPatterns.some(pattern => lowerUrl.includes(pattern));
       }
 
       function isPaymentSuccessUrl(url) {
-          const successPatterns = ['payment-success', 'checkout-success', 'order-complete', 'payment-confirmed', 'purchase-complete'];
+          const successPatterns = ['success', 'complete', 'confirmed', 'thank', 'order-complete', 'receipt', 'confirmation'];
           const lowerUrl = url.toLowerCase();
           return successPatterns.some(pattern => lowerUrl.includes(pattern));
       }
 
       function isPaymentFailureUrl(url) {
-          const failurePatterns = ['payment-cancel', 'payment-failed', 'checkout-failed', 'payment-error', 'payment-declined'];
+          const failurePatterns = ['cancel', 'failed', 'error', 'declined', 'timeout', 'abort'];
           const lowerUrl = url.toLowerCase();
           return failurePatterns.some(pattern => lowerUrl.includes(pattern));
       }
 
-      // Rest of your JavaScript code remains the same...
       function detectPaymentFlow() {
           const currentUrl = window.location.href;
-          
+
           // Entering payment flow
           if (isPaymentUrl(currentUrl) && !isInPaymentFlow) {
               isInPaymentFlow = true;
               originalCartUrl = document.referrer || '';
-              
+
               window.flutter_inappwebview.callHandler('paymentFlowStarted', currentUrl, originalCartUrl);
-              
+
               console.log('Payment flow started:', currentUrl);
               return;
           }
-          
+
           // Payment completed successfully
           if (isPaymentSuccessUrl(currentUrl) && isInPaymentFlow) {
               isInPaymentFlow = false;
-              
+
               window.flutter_inappwebview.callHandler('paymentSuccess', currentUrl);
-              
+
               console.log('Payment completed successfully');
               return;
           }
-          
+
           // Payment cancelled or failed
           if (isPaymentFailureUrl(currentUrl) && isInPaymentFlow) {
               isInPaymentFlow = false;
-              
+
               window.flutter_inappwebview.callHandler('paymentFailed', currentUrl, originalCartUrl);
-              
+
               console.log('Payment cancelled or failed');
               return;
           }
       }
 
-      // Continue with the rest of your existing JavaScript functions...
       function enhancePaymentButtons() {
           // Find payment buttons and add click tracking
           const paymentSelectors = [
               'button[class*="payment"]',
               'button[class*="checkout"]',
-              'button[class*="pay-now"]',
-              'input[value*="Pay Now"]',
-              'input[value*="Proceed to Payment"]',
+              'button[class*="pay"]',
+              'input[value*="Pay"]',
+              'input[value*="Payment"]',
               'input[value*="Checkout"]',
-              'a[href*="/payment/"]',
-              'a[href*="/checkout/"]',
+              'a[href*="payment"]',
+              'a[href*="checkout"]',
               '.payment-btn',
               '.checkout-btn',
               '.pay-btn',
@@ -198,22 +176,14 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
                   buttons.forEach(button => {
                       if (button && !button.dataset.paymentTracked) {
                           button.dataset.paymentTracked = 'true';
-                          
+
                           button.addEventListener('click', (e) => {
-                              // Only track if it's actually a payment button, not order history
-                              const buttonText = (button.textContent || button.value || '').toLowerCase();
-                              const isOrderHistory = buttonText.includes('my orders') || 
-                                                   buttonText.includes('order history') ||
-                                                   buttonText.includes('view orders');
-                              
-                              if (!isOrderHistory) {
-                                  console.log('Payment button clicked:', button);
-                                  
-                                  window.flutter_inappwebview.callHandler('paymentButtonClicked', 
-                                      button.textContent || button.value || 'Unknown', 
-                                      window.location.href
-                                  );
-                              }
+                              console.log('Payment button clicked:', button);
+
+                              window.flutter_inappwebview.callHandler('paymentButtonClicked',
+                                  button.textContent || button.value || 'Unknown',
+                                  window.location.href
+                              );
                           });
                       }
                   });
@@ -223,10 +193,163 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
           });
       }
 
-      // Continue with the rest of your existing JavaScript code...
-      // (include all other functions like monitorPaymentProgress, ensureMobileResponsive, etc.)
-      
-      // The initialization code remains the same
+      function ensureMobileResponsive() {
+          // Ensure viewport is set for mobile
+          let viewport = document.querySelector('meta[name="viewport"]');
+          if (!viewport) {
+              viewport = document.createElement('meta');
+              viewport.name = 'viewport';
+              viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes';
+              document.head.appendChild(viewport);
+          }
+
+          // Make images responsive
+          try {
+              const images = document.querySelectorAll('img');
+              images.forEach(img => {
+                  if (!img.style.maxWidth) {
+                      img.style.maxWidth = '100%';
+                      img.style.height = 'auto';
+                  }
+              });
+
+              const logoSelectors = [
+                  '[data-zs-logo] img',
+                  '.logo img',
+                  '.brand-logo img',
+                  '.site-logo img',
+                  'header img',
+                  '.header img'
+              ];
+
+              logoSelectors.forEach(selector => {
+                  const logos = document.querySelectorAll(selector);
+                  logos.forEach(logo => {
+                      if (logo) {
+                          logo.style.maxWidth = '100%';
+                          logo.style.height = 'auto';
+                          logo.style.objectFit = 'contain';
+                      }
+                  });
+              });
+          } catch(e) {
+              console.error('Responsive image error:', e);
+          }
+      }
+
+      function changeBackgroundColor() {
+          try {
+              document.body.style.backgroundColor = 'white';
+              document.documentElement.style.backgroundColor = 'white';
+
+              const containers = document.querySelectorAll('header, .header, .app-bar, .top-bar, nav');
+              containers.forEach(container => {
+                  if (container) {
+                      container.style.backgroundColor = 'white';
+                  }
+              });
+          } catch(e) {
+              console.error('Background color change error:', e);
+          }
+      }
+
+      function repositionChatIcon() {
+          const chatSelectors = [
+              '.zsiq_flt_rel',
+              '#zsiq_float',
+              '.zsiq_float',
+              '[id*="zsiq"]',
+              '.siqicon',
+              '.siqico-chat'
+          ];
+
+          chatSelectors.forEach(selector => {
+              try {
+                  const elements = document.querySelectorAll(selector);
+                  elements.forEach(el => {
+                      if (el && el.style) {
+                          el.style.cssText = `
+                              position: fixed !important;
+                              left: 20px !important;
+                              top: 50% !important;
+                              transform: translateY(-50%) !important;
+                              right: auto !important;
+                              bottom: auto !important;
+                              z-index: 9999 !important;
+                          `;
+                      }
+                  });
+              } catch(e) {
+                  console.error('Chat icon positioning error:', e);
+              }
+          });
+      }
+
+      function handleExternalLinks() {
+          try {
+              document.removeEventListener('click', globalClickHandler, true);
+              document.addEventListener('click', globalClickHandler, true);
+          } catch(e) {
+              console.error('External link handler error:', e);
+          }
+      }
+
+      function globalClickHandler(e) {
+          try {
+              let target = e.target;
+
+              while (target && target !== document.body && target.tagName !== 'A' && target.tagName !== 'BUTTON') {
+                  target = target.parentElement;
+              }
+
+              if (!target || (target.tagName !== 'A' && target.tagName !== 'BUTTON')) {
+                  return;
+              }
+
+              const href = target.getAttribute('href') || target.getAttribute('data-href') || '';
+
+              if (href) {
+                  // Don't interfere with payment URLs - let them load normally
+                  if (isPaymentUrl(href)) {
+                      console.log('Payment URL clicked, allowing normal navigation:', href);
+                      return true;
+                  }
+
+                  // Social media detection with improved patterns
+                  const socialPatterns = {
+                      facebook: /facebook.com|fb.com|fb.me/i,
+                      instagram: /instagram.com|instagr.am/i,
+                      twitter: /twitter.com|x.com/i,
+                      linkedin: /linkedin.com|lnkd.in/i,
+                      youtube: /youtube.com|youtu.be/i,
+                      tiktok: /tiktok.com/i,
+                      snapchat: /snapchat.com/i
+                  };
+
+                  for (const [platform, pattern] of Object.entries(socialPatterns)) {
+                      if (pattern.test(href)) {
+                          e.preventDefault();
+                          e.stopPropagation();
+
+                          window.flutter_inappwebview.callHandler('externalLink', href, platform === 'facebook' ? 'facebook' : 'social');
+                          return false;
+                      }
+                  }
+
+                  // Handle mailto and tel links
+                  if (href.startsWith('mailto:') || href.startsWith('tel:')) {
+                      e.preventDefault();
+                      e.stopPropagation();
+
+                      window.flutter_inappwebview.callHandler('externalLink', href);
+                      return false;
+                  }
+              }
+          } catch(error) {
+              console.error('Click handler error:', error);
+          }
+      }
+
       function initializeBridge() {
           if (bridgeInitialized) return;
           bridgeInitialized = true;
@@ -248,7 +371,6 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
                   handleExternalLinks();
                   enhancePaymentButtons();
                   detectPaymentFlow();
-                  monitorPaymentProgress();
               });
           });
 
@@ -290,373 +412,6 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
       }
   })();
 ''';
-//   String get enhancedInjectedJavaScript => '''
-//   (function() {
-//       'use strict';
-//
-//       let bridgeInitialized = false;
-//       const cookiesAccepted = $_cookiesAccepted;
-//
-//       // Payment flow tracking
-//       let isInPaymentFlow = false;
-//       let originalCartUrl = '';
-//
-//       // Set cookie consent if accepted
-//       if (cookiesAccepted) {
-//           try {
-//               document.cookie = "cookie_consent=accepted; path=/; max-age=31536000";
-//               localStorage.setItem('cookie_consent', 'true');
-//           } catch(e) {
-//               console.log('Error setting cookie consent:', e);
-//           }
-//       }
-//
-//       function isPaymentUrl(url) {
-//           const paymentPatterns = [
-//               'payment', 'checkout', 'pay', 'stripe', 'paypal', 'razorpay',
-//               'paytm', 'gateway', '/cart/pay', '/payment/', '/checkout/',
-//               'billing', 'order', 'purchase', 'transaction'
-//           ];
-//           const lowerUrl = url.toLowerCase();
-//           return paymentPatterns.some(pattern => lowerUrl.includes(pattern));
-//       }
-//
-//       function isPaymentSuccessUrl(url) {
-//           const successPatterns = ['success', 'complete', 'confirmed', 'thank', 'order-complete', 'receipt', 'confirmation'];
-//           const lowerUrl = url.toLowerCase();
-//           return successPatterns.some(pattern => lowerUrl.includes(pattern));
-//       }
-//
-//       function isPaymentFailureUrl(url) {
-//           const failurePatterns = ['cancel', 'failed', 'error', 'declined', 'timeout', 'abort'];
-//           const lowerUrl = url.toLowerCase();
-//           return failurePatterns.some(pattern => lowerUrl.includes(pattern));
-//       }
-//
-//       function detectPaymentFlow() {
-//           const currentUrl = window.location.href;
-//
-//           // Entering payment flow
-//           if (isPaymentUrl(currentUrl) && !isInPaymentFlow) {
-//               isInPaymentFlow = true;
-//               originalCartUrl = document.referrer || '';
-//
-//               window.flutter_inappwebview.callHandler('paymentFlowStarted', currentUrl, originalCartUrl);
-//
-//               console.log('Payment flow started:', currentUrl);
-//               return;
-//           }
-//
-//           // Payment completed successfully
-//           if (isPaymentSuccessUrl(currentUrl) && isInPaymentFlow) {
-//               isInPaymentFlow = false;
-//
-//               window.flutter_inappwebview.callHandler('paymentSuccess', currentUrl);
-//
-//               console.log('Payment completed successfully');
-//               return;
-//           }
-//
-//           // Payment cancelled or failed
-//           if (isPaymentFailureUrl(currentUrl) && isInPaymentFlow) {
-//               isInPaymentFlow = false;
-//
-//               window.flutter_inappwebview.callHandler('paymentFailed', currentUrl, originalCartUrl);
-//
-//               console.log('Payment cancelled or failed');
-//               return;
-//           }
-//       }
-//
-//       function enhancePaymentButtons() {
-//           // Find payment buttons and add click tracking
-//           const paymentSelectors = [
-//               'button[class*="payment"]',
-//               'button[class*="checkout"]',
-//               'button[class*="pay"]',
-//               'input[value*="Pay"]',
-//               'input[value*="Payment"]',
-//               'input[value*="Checkout"]',
-//               'a[href*="payment"]',
-//               'a[href*="checkout"]',
-//               '.payment-btn',
-//               '.checkout-btn',
-//               '.pay-btn',
-//               '[data-payment]',
-//               '.btn-payment',
-//               '.btn-checkout'
-//           ];
-//
-//           paymentSelectors.forEach(selector => {
-//               try {
-//                   const buttons = document.querySelectorAll(selector);
-//                   buttons.forEach(button => {
-//                       if (button && !button.dataset.paymentTracked) {
-//                           button.dataset.paymentTracked = 'true';
-//
-//                           button.addEventListener('click', (e) => {
-//                               console.log('Payment button clicked:', button);
-//
-//                               window.flutter_inappwebview.callHandler('paymentButtonClicked',
-//                                   button.textContent || button.value || 'Unknown',
-//                                   window.location.href
-//                               );
-//                           });
-//                       }
-//                   });
-//               } catch(e) {
-//                   console.error('Payment button enhancement error:', e);
-//               }
-//           });
-//       }
-//
-//       function monitorPaymentProgress() {
-//           // Monitor for payment progress indicators
-//           const progressSelectors = [
-//               '.payment-progress',
-//               '.checkout-progress',
-//               '.loading',
-//               '.processing',
-//               '[class*="progress"]',
-//               '[class*="loading"]',
-//               '.spinner',
-//               '.loader'
-//           ];
-//
-//           progressSelectors.forEach(selector => {
-//               try {
-//                   const elements = document.querySelectorAll(selector);
-//                   elements.forEach(el => {
-//                       if (el && el.style.display !== 'none' && el.offsetHeight > 0) {
-//                           window.flutter_inappwebview.callHandler('paymentProcessing', 'Payment in progress...');
-//                       }
-//                   });
-//               } catch(e) {
-//                   console.error('Payment progress monitoring error:', e);
-//               }
-//           });
-//       }
-//
-//       function ensureMobileResponsive() {
-//           // Ensure viewport is set for mobile
-//           let viewport = document.querySelector('meta[name="viewport"]');
-//           if (!viewport) {
-//               viewport = document.createElement('meta');
-//               viewport.name = 'viewport';
-//               viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes';
-//               document.head.appendChild(viewport);
-//           }
-//
-//           // Make images responsive
-//           try {
-//               const images = document.querySelectorAll('img');
-//               images.forEach(img => {
-//                   if (!img.style.maxWidth) {
-//                       img.style.maxWidth = '100%';
-//                       img.style.height = 'auto';
-//                   }
-//               });
-//
-//               const logoSelectors = [
-//                   '[data-zs-logo] img',
-//                   '.logo img',
-//                   '.brand-logo img',
-//                   '.site-logo img',
-//                   'header img',
-//                   '.header img'
-//               ];
-//
-//               logoSelectors.forEach(selector => {
-//                   const logos = document.querySelectorAll(selector);
-//                   logos.forEach(logo => {
-//                       if (logo) {
-//                           logo.style.maxWidth = '100%';
-//                           logo.style.height = 'auto';
-//                           logo.style.objectFit = 'contain';
-//                       }
-//                   });
-//               });
-//           } catch(e) {
-//               console.error('Responsive image error:', e);
-//           }
-//       }
-//
-//       function changeBackgroundColor() {
-//           try {
-//               document.body.style.backgroundColor = 'white';
-//               document.documentElement.style.backgroundColor = 'white';
-//
-//               const containers = document.querySelectorAll('header, .header, .app-bar, .top-bar, nav');
-//               containers.forEach(container => {
-//                   if (container) {
-//                       container.style.backgroundColor = 'white';
-//                   }
-//               });
-//           } catch(e) {
-//               console.error('Background color change error:', e);
-//           }
-//       }
-//
-//       function repositionChatIcon() {
-//           const chatSelectors = [
-//               '.zsiq_flt_rel',
-//               '#zsiq_float',
-//               '.zsiq_float',
-//               '[id*="zsiq"]',
-//               '.siqicon',
-//               '.siqico-chat'
-//           ];
-//
-//           chatSelectors.forEach(selector => {
-//               try {
-//                   const elements = document.querySelectorAll(selector);
-//                   elements.forEach(el => {
-//                       if (el && el.style) {
-//                           el.style.cssText = `
-//                               position: fixed !important;
-//                               left: 20px !important;
-//                               top: 50% !important;
-//                               transform: translateY(-50%) !important;
-//                               right: auto !important;
-//                               bottom: auto !important;
-//                               z-index: 9999 !important;
-//                           `;
-//                       }
-//                   });
-//               } catch(e) {
-//                   console.error('Chat icon positioning error:', e);
-//               }
-//           });
-//       }
-//
-//       function handleExternalLinks() {
-//           try {
-//               document.removeEventListener('click', globalClickHandler, true);
-//               document.addEventListener('click', globalClickHandler, true);
-//           } catch(e) {
-//               console.error('External link handler error:', e);
-//           }
-//       }
-//
-//       function globalClickHandler(e) {
-//           try {
-//               let target = e.target;
-//
-//               while (target && target !== document.body && target.tagName !== 'A' && target.tagName !== 'BUTTON') {
-//                   target = target.parentElement;
-//               }
-//
-//               if (!target || (target.tagName !== 'A' && target.tagName !== 'BUTTON')) {
-//                   return;
-//               }
-//
-//               const href = target.getAttribute('href') || target.getAttribute('data-href') || '';
-//
-//               if (href) {
-//                   // Don't interfere with payment URLs - let them load normally
-//                   if (isPaymentUrl(href)) {
-//                       console.log('Payment URL clicked, allowing normal navigation:', href);
-//                       return true;
-//                   }
-//
-//                   // Social media detection with improved patterns
-//                   const socialPatterns = {
-//                       facebook: /facebook.com|fb.com|fb.me/i,
-//                       instagram: /instagram.com|instagr.am/i,
-//                       twitter: /twitter.com|x.com/i,
-//                       linkedin: /linkedin.com|lnkd.in/i,
-//                       youtube: /youtube.com|youtu.be/i,
-//                       tiktok: /tiktok.com/i,
-//                       snapchat: /snapchat.com/i
-//                   };
-//
-//                   for (const [platform, pattern] of Object.entries(socialPatterns)) {
-//                       if (pattern.test(href)) {
-//                           e.preventDefault();
-//                           e.stopPropagation();
-//
-//                           window.flutter_inappwebview.callHandler('externalLink', href, platform === 'facebook' ? 'facebook' : 'social');
-//                           return false;
-//                       }
-//                   }
-//
-//                   // Handle mailto and tel links
-//                   if (href.startsWith('mailto:') || href.startsWith('tel:')) {
-//                       e.preventDefault();
-//                       e.stopPropagation();
-//
-//                       window.flutter_inappwebview.callHandler('externalLink', href);
-//                       return false;
-//                   }
-//               }
-//           } catch(error) {
-//               console.error('Click handler error:', error);
-//           }
-//       }
-//
-//       function initializeBridge() {
-//           if (bridgeInitialized) return;
-//           bridgeInitialized = true;
-//
-//           // Initialize all functions
-//           ensureMobileResponsive();
-//           changeBackgroundColor();
-//           repositionChatIcon();
-//           handleExternalLinks();
-//           enhancePaymentButtons();
-//           detectPaymentFlow();
-//
-//           // Enhanced MutationObserver for payment flow
-//           const observer = new MutationObserver(() => {
-//               requestAnimationFrame(() => {
-//                   ensureMobileResponsive();
-//                   changeBackgroundColor();
-//                   repositionChatIcon();
-//                   handleExternalLinks();
-//                   enhancePaymentButtons();
-//                   detectPaymentFlow();
-//                   monitorPaymentProgress();
-//               });
-//           });
-//
-//           observer.observe(document.body, {
-//               childList: true,
-//               subtree: true
-//           });
-//
-//           // URL change detection for SPA applications
-//           let lastUrl = location.href;
-//           new MutationObserver(() => {
-//               const url = location.href;
-//               if (url !== lastUrl) {
-//                   lastUrl = url;
-//                   setTimeout(detectPaymentFlow, 100);
-//               }
-//           }).observe(document, { subtree: true, childList: true });
-//
-//           // Staggered initialization
-//           const initTasks = [
-//               { fn: ensureMobileResponsive, delay: 300 },
-//               { fn: repositionChatIcon, delay: 400 },
-//               { fn: () => { changeBackgroundColor(); handleExternalLinks(); }, delay: 500 },
-//               { fn: enhancePaymentButtons, delay: 600 },
-//               { fn: detectPaymentFlow, delay: 700 },
-//               { fn: () => window.flutter_inappwebview.callHandler('bridgeReady'), delay: 800 }
-//           ];
-//
-//           initTasks.forEach(task => {
-//               setTimeout(task.fn, task.delay);
-//           });
-//       }
-//
-//       // Initialize when ready
-//       if (document.readyState === 'loading') {
-//           document.addEventListener('DOMContentLoaded', initializeBridge);
-//       } else {
-//           setTimeout(initializeBridge, 50);
-//       }
-//   })();
-// ''';
 
   @override
   void initState() {
@@ -710,76 +465,26 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
   }
 
   // Payment Flow Methods
-  // bool _isPaymentUrl(String url) {
-  //   final paymentPatterns = [
-  //     'payment',
-  //     'checkout',
-  //     'pay',
-  //     'stripe',
-  //     'paypal',
-  //     'razorpay',
-  //     'paytm',
-  //     'gateway',
-  //     '/cart/pay',
-  //     '/payment/',
-  //     '/checkout/',
-  //     'billing',
-  //     'order',
-  //     'purchase',
-  //     'transaction'
-  //   ];
-  //
-  //   final lowerUrl = url.toLowerCase();
-  //   return paymentPatterns.any((pattern) => lowerUrl.contains(pattern));
-  // }
-
   bool _isPaymentUrl(String url) {
-    final lowerUrl = url.toLowerCase();
-
-    // Exclude specific pages that should NOT trigger payment flow
-    final excludePatterns = [
-      '/my-orders',
-      '/myorders',
-      '/orders',
-      '/order-history',
-      '/account/orders',
-      '/user/orders',
-      '/profile/orders',
-      '/dashboard/orders',
-      '/order-list',
-      '/order-tracking',
-      '/track-order'
-    ];
-
-    // Check if URL should be excluded
-    for (String pattern in excludePatterns) {
-      if (lowerUrl.contains(pattern)) {
-        return false;
-      }
-    }
     final paymentPatterns = [
+      'payment',
+      'checkout',
+      'pay',
+      'stripe',
+      'paypal',
+      'razorpay',
+      'paytm',
+      'gateway',
+      '/cart/pay',
       '/payment/',
       '/checkout/',
-      '/cart/pay',
-      '/pay/',
-      '/billing/',
-      '/purchase/',
-      'stripe.com',
-      'paypal.com',
-      'razorpay.com',
-      'paytm.com',
-      '/gateway/',
-      '/transaction/',
-      'payment-gateway',
-      'checkout-session',
-      'payment-intent',
-      'payment-method',
-      'payment-confirm',
-      'checkout-confirm'
+      'billing',
+      'purchase',
+      'transaction'
     ];
 
+    final lowerUrl = url.toLowerCase();
     return paymentPatterns.any((pattern) => lowerUrl.contains(pattern));
-
   }
 
   void _handlePaymentFlow(String url) {
@@ -788,26 +493,7 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
       _paymentReturnUrl = currentUrl;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation(Colors.white),
-              ),
-            ),
-            SizedBox(width: 12),
-            Text('Processing payment...'),
-          ],
-        ),
-        duration: Duration(seconds: 3),
-        backgroundColor: Colors.orange,
-      ),
-    );
+    // Removed SnackBar progress indicator
 
     _checkPaymentCompletion();
   }
@@ -858,45 +544,32 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
       _isInPaymentFlow = false;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            SizedBox(width: 12),
-            Text('Payment completed successfully!'),
-          ],
-        ),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 4),
-      ),
-    );
+    // Removed SnackBar progress indicator
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) =>
-          AlertDialog(
-            title: Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.green, size: 30),
-                SizedBox(width: 10),
-                Text('Payment Success'),
-              ],
-            ),
-            content: Text('Your payment has been processed successfully!'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  Future.delayed(Duration(milliseconds: 500), () {
-                    _refreshPage();
-                  });
-                },
-                child: Text('OK'),
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green, size: 30),
+            SizedBox(width: 10),
+            Text('Payment Success'),
+          ],
+        ),
+        content: Text('Your payment has been processed successfully!'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Future.delayed(Duration(milliseconds: 500), () {
+                _refreshPage();
+              });
+            },
+            child: Text('OK'),
           ),
+        ],
+      ),
     );
   }
 
@@ -905,60 +578,37 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
       _isInPaymentFlow = false;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.error, color: Colors.white),
-            SizedBox(width: 12),
-            Text('Payment was cancelled or failed'),
-          ],
-        ),
-        backgroundColor: Colors.red,
-        duration: Duration(seconds: 4),
-        action: SnackBarAction(
-          label: 'RETRY',
-          textColor: Colors.white,
-          onPressed: () {
-            if (_paymentReturnUrl != null) {
-              webViewController.loadUrl(
-                  urlRequest: URLRequest(url: WebUri(_paymentReturnUrl!)));
-            }
-          },
-        ),
-      ),
-    );
+    // Removed SnackBar progress indicator
 
     showDialog(
       context: context,
-      builder: (context) =>
-          AlertDialog(
-            title: Row(
-              children: [
-                Icon(Icons.error, color: Colors.red, size: 30),
-                SizedBox(width: 10),
-                Text('Payment Failed'),
-              ],
-            ),
-            content: Text(
-                'Your payment could not be processed. Would you like to try again?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  if (_paymentReturnUrl != null) {
-                    webViewController.loadUrl(urlRequest: URLRequest(
-                        url: WebUri(_paymentReturnUrl!)));
-                  }
-                },
-                child: Text('Try Again'),
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.error, color: Colors.red, size: 30),
+            SizedBox(width: 10),
+            Text('Payment Failed'),
+          ],
+        ),
+        content: Text(
+            'Your payment could not be processed. Would you like to try again?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Cancel'),
           ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              if (_paymentReturnUrl != null) {
+                webViewController.loadUrl(urlRequest: URLRequest(
+                    url: WebUri(_paymentReturnUrl!)));
+              }
+            },
+            child: Text('Try Again'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -969,14 +619,6 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
     });
     _paymentCheckTimer?.cancel();
   }
-
-  // Future<void> _loadInitialUrl() async {
-  //   await AfronikaBrowserHelper.loadInitialUrl(
-  //     context: context,
-  //     webViewController: webViewController,
-  //     initialUrl: currentUrl,
-  //   );
-  // }
 
   Future<void> _refreshPage() async {
     await AfronikaBrowserHelper.refreshPage(
@@ -996,26 +638,25 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
     if (_isInPaymentFlow) {
       final shouldExit = await showDialog<bool>(
         context: context,
-        builder: (context) =>
-            AlertDialog(
-              title: Text('Payment in Progress'),
-              content: Text(
-                  'You are currently in a payment process. Are you sure you want to go back?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text('Stay'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    _resetPaymentFlow();
-                    Navigator.of(context).pop(true);
-                  },
-                  style: TextButton.styleFrom(foregroundColor: Colors.red),
-                  child: Text('Go Back'),
-                ),
-              ],
+        builder: (context) => AlertDialog(
+          title: Text('Payment in Progress'),
+          content: Text(
+              'You are currently in a payment process. Are you sure you want to go back?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text('Stay'),
             ),
+            TextButton(
+              onPressed: () {
+                _resetPaymentFlow();
+                Navigator.of(context).pop(true);
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: Text('Go Back'),
+            ),
+          ],
+        ),
       );
 
       if (shouldExit == true) {
@@ -1172,94 +813,8 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
                   child: LinearProgressIndicator(
                     value: loadingProgress,
                     backgroundColor: Colors.grey[200],
-                    valueColor: AlwaysStoppedAnimation(
-                      _isInPaymentFlow ? Colors.orange : Colors.teal,
-                    ),
+                    valueColor: AlwaysStoppedAnimation(Colors.teal),
                     minHeight: 3,
-                  ),
-                ),
-
-              // Payment Flow Indicator
-              if (_isInPaymentFlow)
-                Positioned(
-                  top: 8,
-                  left: 16,
-                  right: 16,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(Colors.white),
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'Payment in Progress',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Spacer(),
-                        GestureDetector(
-                          onTap: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) =>
-                                  AlertDialog(
-                                    title: Text('Payment Status'),
-                                    content: Text(
-                                        'Your payment is being processed. Please wait for completion or cancellation.'),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.of(context).pop(),
-                                        child: Text('OK'),
-                                      ),
-                                      if (_paymentReturnUrl != null)
-                                        TextButton(
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                            _resetPaymentFlow();
-                                            webViewController.loadUrl(
-                                                urlRequest: URLRequest(
-                                                    url: WebUri(
-                                                        _paymentReturnUrl!)));
-                                          },
-                                          style: TextButton.styleFrom(
-                                              foregroundColor: Colors.red),
-                                          child: Text('Back to Cart'),
-                                        ),
-                                    ],
-                                  ),
-                            );
-                          },
-                          child: Icon(
-                            Icons.info_outline,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                 ),
 
@@ -1285,7 +840,7 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
                       ),
                       child: Icon(
                         Icons.info_outline,
-                        color: _isInPaymentFlow ? Colors.orange : Colors.teal,
+                        color: Colors.teal,
                         size: 24,
                       ),
                     ),
@@ -1306,31 +861,30 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
                       onTap: () {
                         showDialog(
                           context: context,
-                          builder: (context) =>
-                              AlertDialog(
-                                title: Text('Cancel Payment'),
-                                content: Text(
-                                    'Are you sure you want to cancel the payment and return to cart?'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.of(context).pop(),
-                                    child: Text('Continue Payment'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.of(context).pop();
-                                      _resetPaymentFlow();
-                                      webViewController.loadUrl(
-                                          urlRequest: URLRequest(
-                                              url: WebUri(_paymentReturnUrl!)));
-                                    },
-                                    style: TextButton.styleFrom(
-                                        foregroundColor: Colors.red),
-                                    child: Text('Cancel Payment'),
-                                  ),
-                                ],
+                          builder: (context) => AlertDialog(
+                            title: Text('Cancel Payment'),
+                            content: Text(
+                                'Are you sure you want to cancel the payment and return to cart?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.of(context).pop(),
+                                child: Text('Continue Payment'),
                               ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                  _resetPaymentFlow();
+                                  webViewController.loadUrl(
+                                      urlRequest: URLRequest(
+                                          url: WebUri(_paymentReturnUrl!)));
+                                },
+                                style: TextButton.styleFrom(
+                                    foregroundColor: Colors.red),
+                                child: Text('Cancel Payment'),
+                              ),
+                            ],
+                          ),
                         );
                       },
                       borderRadius: BorderRadius.circular(12),
@@ -1382,60 +936,22 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
       },
     );
 
-    // Payment button clicked
+    // Payment button clicked - Removed SnackBar
     webViewController.addJavaScriptHandler(
       handlerName: 'paymentButtonClicked',
       callback: (args) {
         debugPrint('Payment button clicked: ${args[0]}');
         HapticFeedback.selectionClick();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation(Colors.white),
-                  ),
-                ),
-                SizedBox(width: 12),
-                Text('Initiating payment...'),
-              ],
-            ),
-            duration: Duration(seconds: 2),
-            backgroundColor: Colors.blue,
-          ),
-        );
+        // Removed SnackBar progress indicator
       },
     );
 
-    // Payment processing
+    // Payment processing - Removed SnackBar
     webViewController.addJavaScriptHandler(
       handlerName: 'paymentProcessing',
       callback: (args) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation(Colors.white),
-                  ),
-                ),
-                SizedBox(width: 12),
-                Text(args[0] ?? 'Processing...'),
-              ],
-            ),
-            duration: Duration(seconds: 3),
-            backgroundColor: Colors.orange,
-          ),
-        );
+        // Removed SnackBar progress indicator
+        debugPrint('Payment processing: ${args[0] ?? 'Processing...'}');
       },
     );
 
@@ -1483,25 +999,18 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
 
   void _openMenu(BuildContext context) {
     if (_isInPaymentFlow) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Menu is disabled during payment process'),
-          duration: Duration(seconds: 2),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      // Removed SnackBar progress indicator for menu disabled message
       return;
     }
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) =>
-          MenuBottomSheetWidget(
-            onPrivacyPolicyTap: () => _navigateToPrivacyPolicy(),
-            onAboutAppTap: () => _navigateToAboutApp(),
-            onContactTap: () => _navigateToContact(),
-          ),
+      builder: (_) => MenuBottomSheetWidget(
+        onPrivacyPolicyTap: () => _navigateToPrivacyPolicy(),
+        onAboutAppTap: () => _navigateToAboutApp(),
+        onContactTap: () => _navigateToContact(),
+      ),
     );
   }
 

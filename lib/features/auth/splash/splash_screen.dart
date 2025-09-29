@@ -189,6 +189,7 @@ class _SplashScreenState extends State<SplashScreen>
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Center(
           child: Column(
@@ -206,35 +207,44 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                     children: [
                       TextSpan(
-                        text: 'Afr',
+                        text: 'A',
                         style: AappTextStyle.roboto(
                           fontSize: 56,
+                          letterSpacing: 0.3,
+
                           weight: FontWeight.bold,
-                          color: Colors.red,
+                          color: AColors.hardRed,
                         ),
                       ),
                       TextSpan(
-                        text: 'o',
+                        text: 'fro',
+
                         style: AappTextStyle.roboto(
+                          letterSpacing: 0.3,
                           fontSize: 56,
                           weight: FontWeight.bold,
-                          color: dark ? Colors.white : Colors.black,
+                          color: AColors.hardRed,
+
                         ),
                       ),
                       TextSpan(
-                        text: 'n',
+                        text: 'ni',
                         style: AappTextStyle.roboto(
                           fontSize: 56,
+                          letterSpacing: 0.3,
+
                           weight: FontWeight.bold,
                           color: AColors.primary,
                         ),
                       ),
                       TextSpan(
-                        text: 'ika',
+                        text: 'ka',
                         style: AappTextStyle.roboto(
                           fontSize: 56,
+                          letterSpacing: 0.3,
+
                           weight: FontWeight.bold,
-                          color: Colors.cyan,
+                          color: AColors.lightBlue,
                         ),
                       ),
                     ],
@@ -242,7 +252,7 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
               ),
 
-              const SizedBox(height: 80),
+              const SizedBox(height: 60),
 
               // Animated progress bar
               if (_progressAnimationController != null && _progressAnimation != null)

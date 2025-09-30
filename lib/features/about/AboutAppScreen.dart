@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../utils/constant/app_test_style.dart';
+import '../../utils/constant/colors.dart';
+
 class AboutAppScreen extends StatelessWidget {
   const AboutAppScreen({Key? key}) : super(key: key);
 
@@ -33,22 +36,62 @@ class AboutAppScreen extends StatelessWidget {
             const SizedBox(height: 40),
 
             // App Logo
-            Center(
+            Container(
+              padding: const EdgeInsets.all(20),
               child: RichText(
                 text: TextSpan(
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
+                  style: AappTextStyle.roboto(
+                    fontSize: 56,
+                    weight: FontWeight.bold,
+                    color: Colors.red,
                   ),
                   children: [
-                    TextSpan(text: 'Afr', style: TextStyle(color: Color(0xFFF44336))),
-                    TextSpan(text: 'o', style: TextStyle(color: Colors.black)),
-                    TextSpan(text: 'n', style: TextStyle(color: Color(0xFFFF9800))),
-                    TextSpan(text: 'ika', style: TextStyle(color: Color(0xFF00BCD4))),
+                    TextSpan(
+                      text: 'A',
+                      style: AappTextStyle.roboto(
+                        fontSize: 56,
+                        letterSpacing: 0.3,
+
+                        weight: FontWeight.bold,
+                        color: AColors.hardRed,
+                      ),
+                    ),
+                    TextSpan(
+                      text: 'fro',
+
+                      style: AappTextStyle.roboto(
+                        letterSpacing: 0.3,
+                        fontSize: 56,
+                        weight: FontWeight.bold,
+                        color: AColors.hardRed,
+
+                      ),
+                    ),
+                    TextSpan(
+                      text: 'ni',
+                      style: AappTextStyle.roboto(
+                        fontSize: 56,
+                        letterSpacing: 0.3,
+
+                        weight: FontWeight.bold,
+                        color: AColors.primary,
+                      ),
+                    ),
+                    TextSpan(
+                      text: 'ka',
+                      style: AappTextStyle.roboto(
+                        fontSize: 56,
+                        letterSpacing: 0.3,
+
+                        weight: FontWeight.bold,
+                        color: AColors.lightBlue,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
+
 
             const SizedBox(height: 24),
 

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../utils/constant/app_test_style.dart';
+
 class PrivacyPolicyScreen extends StatelessWidget {
-  const PrivacyPolicyScreen({Key? key}) : super(key: key);
+  const PrivacyPolicyScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -18,11 +20,13 @@ class PrivacyPolicyScreen extends StatelessWidget {
             Navigator.pop(context);
           },
         ),
-        title: const Text(
+        title: Text(
           'Privacy Policy',
-          style: TextStyle(
-            color: Colors.grey,
-            fontWeight: FontWeight.w600,
+          style: AappTextStyle.roboto(
+            letterSpacing: 0.3,
+            fontSize: 18,
+            weight: FontWeight.w600,
+            color: Colors.grey[800]!,
           ),
         ),
         centerTitle: true,
@@ -49,18 +53,21 @@ class PrivacyPolicyScreen extends StatelessWidget {
                       children: [
                         Text(
                           'Your Privacy Matters',
-                          style: TextStyle(
+                          style: AappTextStyle.roboto(
+                            letterSpacing: 0.3,
                             fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey[800],
+                            weight: FontWeight.bold,
+                            color: Colors.grey[800]!,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Last updated: September 2025',
-                          style: TextStyle(
+                          style: AappTextStyle.roboto(
+                            letterSpacing: 0.3,
                             fontSize: 14,
-                            color: Colors.grey[600],
+                            weight: FontWeight.normal,
+                            color: Colors.grey[600]!,
                           ),
                         ),
                       ],
@@ -78,7 +85,6 @@ class PrivacyPolicyScreen extends StatelessWidget {
               'We collect personal information you provide during account creation or when placing an order. This includes:\n\n'
                   '- Full Name (required)\n'
                   '- Email Address (required)\n'
-                  '- Phone Number (optional, for delivery updates or support)\n'
                   '- Shipping and Billing Addresses (only when placing orders)\n'
                   '- Payment Information (processed securely, never stored)\n'
                   '- Login Credentials (for account security)\n\n'
@@ -193,11 +199,12 @@ class PrivacyPolicyScreen extends StatelessWidget {
                   ),
                   elevation: 2,
                 ),
-                child: const Text(
+                child: Text(
                   'I Understand',
-                  style: TextStyle(
+                  style: AappTextStyle.roboto(
+                    letterSpacing: 0.3,
                     fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    weight: FontWeight.w600,
                     color: Colors.white,
                   ),
                 ),
@@ -219,10 +226,11 @@ class PrivacyPolicyScreen extends StatelessWidget {
         children: [
           Text(
             title,
-            style: TextStyle(
+            style: AappTextStyle.roboto(
+              letterSpacing: 0.3,
               fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[800],
+              weight: FontWeight.bold,
+              color: Colors.grey[800]!,
             ),
           ),
           const SizedBox(height: 12),
@@ -241,10 +249,11 @@ class PrivacyPolicyScreen extends StatelessWidget {
             ),
             child: Text(
               content,
-              style: TextStyle(
+              style: AappTextStyle.roboto(
+                letterSpacing: 0.3,
                 fontSize: 14,
-                height: 1.6,
-                color: Colors.grey[700],
+                weight: FontWeight.normal,
+                color: Colors.grey[700]!,
               ),
             ),
           ),

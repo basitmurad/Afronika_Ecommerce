@@ -26,6 +26,8 @@
     <true/>
     <key>UILaunchStoryboardName</key>
     <string>LaunchScreen</string>
+    <key>UIMainStoryboardFile</key>
+    <string>Main</string>
     <key>UISupportedInterfaceOrientations</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>
@@ -43,8 +45,12 @@
     <true/>
     <key>UIApplicationSupportsIndirectInputEvents</key>
     <true/>
-    <key>UIStatusBarHidden</key>
+    <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
+
+    <!-- Flutter Configuration -->
+    <key>io.flutter.embedded_views_preview</key>
+    <true/>
 
     <!-- URL Schemes -->
     <key>LSApplicationQueriesSchemes</key>
@@ -54,7 +60,7 @@
         <string>sms</string>
     </array>
 
-    <!-- Allow arbitrary loads for web content -->
+    <!-- App Transport Security -->
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSAllowsArbitraryLoads</key>
@@ -65,7 +71,7 @@
     <key>NSUserTrackingUsageDescription</key>
     <string>This identifier will be used to deliver personalized ads and improve app experience.</string>
 
-    <!-- Custom URL scheme (replace "afronika" with your app’s real scheme) -->
+    <!-- Custom URL scheme -->
     <key>CFBundleURLTypes</key>
     <array>
         <dict>

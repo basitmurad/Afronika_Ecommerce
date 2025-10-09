@@ -6,11 +6,11 @@ class MenuBottomSheetWidget extends StatelessWidget {
   final VoidCallback onContactTap;
 
   const MenuBottomSheetWidget({
-    Key? key,
+    super.key,
     required this.onPrivacyPolicyTap,
     required this.onAboutAppTap,
     required this.onContactTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

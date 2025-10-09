@@ -825,7 +825,7 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
                 child: Material(
                   elevation: 4,
                   borderRadius: BorderRadius.circular(12),
-                  color: Colors.white.withOpacity(0.95),
+                  color: Colors.white.withValues(alpha: 0.95),
                   child: InkWell(
                     onTap: () => _openMenu(context),
                     borderRadius: BorderRadius.circular(12),
@@ -834,7 +834,7 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: Colors.grey.withOpacity(0.2),
+                          color: Colors.grey.withValues(alpha: 0.2),
                           width: 1,
                         ),
                       ),
@@ -856,7 +856,7 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
                   child: Material(
                     elevation: 4,
                     borderRadius: BorderRadius.circular(12),
-                    color: Colors.red.withOpacity(0.9),
+                    color: Colors.red.withValues(alpha: 0.9),
                     child: InkWell(
                       onTap: () {
                         showDialog(

@@ -6,11 +6,11 @@ class RefreshFloatingButton extends StatelessWidget {
   final VoidCallback onRefresh;
 
   const RefreshFloatingButton({
-    Key? key,
+    super.key,
     required this.isRefreshing,
     required this.showCookieBanner,
     required this.onRefresh,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +21,7 @@ class RefreshFloatingButton extends StatelessWidget {
         onPressed: isRefreshing ? null : onRefresh,
         backgroundColor: Colors.white,
         foregroundColor: Colors.teal,
+        elevation: 4,
         child: isRefreshing
             ? SizedBox(
           width: 20,
@@ -28,7 +29,6 @@ class RefreshFloatingButton extends StatelessWidget {
           child: CircularProgressIndicator(strokeWidth: 2),
         )
             : Icon(Icons.refresh),
-        elevation: 4,
       ),
     );
   }

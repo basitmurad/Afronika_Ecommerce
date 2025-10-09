@@ -150,7 +150,6 @@
 //
 
 
-import 'package:flutter/animation.dart' show AnimationController;
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart' hide WebResourceError;
 import 'package:webview_flutter/webview_flutter.dart';

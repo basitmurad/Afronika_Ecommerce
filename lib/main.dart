@@ -13,7 +13,6 @@ Future<void> main() async {
     ),
   );
 
-  // Initialize tracking *before* running the app
 
   runApp(const MyApp());
 }

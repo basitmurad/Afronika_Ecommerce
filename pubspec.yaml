@@ -27,13 +27,14 @@ dependencies:
   flutter_inappwebview: ^6.1.5
   webview_flutter_android: ^4.8.2
   webview_flutter_wkwebview: ^3.22.1
-  flutter_native_splash: ^2.4.6
   flutter_launcher_icons: ^0.14.4
   flutter_custom_tabs: ^2.4.0
   change_app_package_name: ^1.5.0
   app_tracking_transparency: ^2.0.6+1
   connectivity_plus: ^7.0.0
+  flutter_native_splash: ^2.4.1  # or the latest version
 
+  webview_flutter_platform_interface: any
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -53,22 +54,25 @@ flutter:
         - asset: assets/fonts/roboto/Roboto-Regular.ttf
         - asset: assets/fonts/roboto/Roboto-Bold.ttf
           weight: 700
-
+#
 # ADD THIS SECTION HERE (after the flutter section)
+
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/images/newlogo.png"
+  image_path: "assets/images/logonew.png"
+
 flutter_native_splash:
-  color: "#ffffff"  # Background color (white)
-  image: assets/images/newlogo.png  # Your app logo
+  color: "#ffffff"                # Background color (white)
+  image: "assets/images/logonew.png"  # Splash image (logo)
   android_gravity: center
   ios_content_mode: scaleAspectFit
-  # Optional: Dark mode support
-  color_dark: "#ffffff"  # Keep white background for dark mode too
-  image_dark: assets/images/newlogo.png
 
-  # Android 12+ support
+  # Optional: Dark mode support
+  color_dark: "#ffffff"
+  image_dark: "assets/images/logonew.png"
+
+  # Android 12+ support (must include an image here)
   android_12:
-    image: assets/images/newlogo.png
-    color: "#ffffff"  # White background for Android 12+
+    image: "assets/images/logonew.png"
+    color: "#ffffff"

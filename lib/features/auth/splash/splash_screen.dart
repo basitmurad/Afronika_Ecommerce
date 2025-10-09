@@ -18,76 +18,57 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   double progress = 0.0;
-  AnimationController? _progressAnimationController;
-  Animation<double>? _progressAnimation;
+  late AnimationController _progressAnimationController;
+  late Animation<double> _progressAnimation;
 
-  // Simple SharedPreferences key
   static const String _onboardingCompletedKey = 'onboarding_completed';
 
   Timer? _progressTimer;
   bool _isNavigating = false;
-  bool _isDisposed = false;
 
   @override
   void initState() {
     super.initState();
+
+    // Initialize animation controller immediately
+    _progressAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+
+    _progressAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _progressAnimationController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Start animations and progress after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !_isDisposed) {
-        _initializeAnimations();
-        _startAnimations();
+      if (mounted) {
+        _progressAnimationController.forward();
         _startProgress();
       }
     });
   }
 
-  void _initializeAnimations() {
-    if (_isDisposed || !mounted) return;
-
-    try {
-      _progressAnimationController = AnimationController(
-        duration: const Duration(milliseconds: 500),
-        vsync: this,
-      );
-
-      _progressAnimation = Tween<double>(
-        begin: 0.0,
-        end: 1.0,
-      ).animate(CurvedAnimation(
-        parent: _progressAnimationController!,
-        curve: Curves.easeInOut,
-      ));
-    } catch (e) {
-      print('Animation initialization error: $e');
-    }
-  }
-
-  void _startAnimations() {
-    if (_isDisposed || !mounted || _progressAnimationController == null) return;
-
-    try {
-      _progressAnimationController!.forward();
-    } catch (e) {
-      print('Animation error: $e');
-    }
-  }
-
   void _startProgress() {
-    if (_isDisposed) return;
+    if (!mounted) return;
 
-    _progressTimer = Timer.periodic(const Duration(milliseconds: 40), (timer) {
-      if (!mounted || _isDisposed) {
+    // Slightly longer interval for better iOS performance
+    _progressTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+      if (!mounted) {
         timer.cancel();
         return;
       }
 
-      if (mounted) {
-        setState(() {
-          progress += 0.025; // Fast progress
-        });
-      }
+      setState(() {
+        progress += 0.03; // Adjusted for 50ms interval
+        if (progress > 1.0) progress = 1.0;
+      });
 
       if (progress >= 1.0) {
-        progress = 1.0;
         timer.cancel();
         _checkNavigationDestination();
       }
@@ -95,96 +76,76 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _checkNavigationDestination() async {
-    if (_isNavigating || _isDisposed || !mounted) return;
+    if (_isNavigating || !mounted) return;
     _isNavigating = true;
 
     try {
       HapticFeedback.lightImpact();
     } catch (e) {
-      print('Haptic feedback error: $e');
+      debugPrint('Haptic feedback error: $e');
     }
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final bool hasCompletedOnboarding = prefs.getBool(_onboardingCompletedKey) ?? false;
+      // Add a small delay before checking preferences on iOS
+      await Future.delayed(const Duration(milliseconds: 100));
 
+      final prefs = await SharedPreferences.getInstance();
+      final bool hasCompletedOnboarding =
+          prefs.getBool(_onboardingCompletedKey) ?? false;
+
+      // Additional delay for smoother transition
       await Future.delayed(const Duration(milliseconds: 300));
 
-      if (!mounted || _isDisposed) return;
+      if (!mounted) return;
 
+      // Use pushReplacement directly instead of Future.microtask
       if (hasCompletedOnboarding) {
-        Future.microtask(() {
-          if (!mounted) return;
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => AfronikaBrowserApp()),
-          );
-        });
-        print('✅ Returning user — would launch main app');
+        debugPrint('✅ Returning user — launching main app');
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => const AfronikaBrowserApp(),
+          ),
+        );
       } else {
-        print('🟢 First time user — would show onboarding');
-        Future.microtask(() {
-          if (!mounted) return;
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => OnboardingScreen()),
-          );
-        });
-      }
-
-    } catch (e) {
-      print('🔴 Error checking onboarding state: $e');
-      _fallbackNavigation();
-    }
-  }
-
-  void _fallbackNavigation() {
-    if (!mounted || _isDisposed) return;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _isDisposed) return;
-
-      try {
-        print('⚠️ Fallback — showing onboarding');
+        debugPrint('🟢 First time user — showing onboarding');
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => const OnboardingScreen(),
           ),
         );
-      } catch (e) {
-        print('Fallback navigation error: $e');
       }
-    });
+    } catch (e) {
+      debugPrint('🔴 Error checking onboarding state: $e');
+      if (mounted) {
+        _fallbackNavigation();
+      }
+    }
+  }
+
+  void _fallbackNavigation() {
+    if (!mounted) return;
+
+    try {
+      debugPrint('⚠️ Fallback — showing onboarding');
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => const OnboardingScreen(),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Fallback navigation error: $e');
+    }
   }
 
   @override
   void dispose() {
-    _isDisposed = true;
     _progressTimer?.cancel();
-    _progressTimer = null;
-
-    if (_progressAnimationController != null) {
-      try {
-        _progressAnimationController!.dispose();
-        _progressAnimationController = null;
-      } catch (e) {
-        print('Dispose error: $e');
-      }
-    }
-
+    _progressAnimationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isDisposed) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
     final bool dark = ADeviceUtils.isDarkMode(context);
     final size = MediaQuery.of(context).size;
 
@@ -195,7 +156,7 @@ class _SplashScreenState extends State<SplashScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Simple static logo without animations
+              // Logo
               Container(
                 padding: const EdgeInsets.all(20),
                 child: RichText(
@@ -211,20 +172,17 @@ class _SplashScreenState extends State<SplashScreen>
                         style: AappTextStyle.roboto(
                           fontSize: 56,
                           letterSpacing: 0.3,
-
                           weight: FontWeight.bold,
                           color: AColors.hardRed,
                         ),
                       ),
                       TextSpan(
                         text: 'fro',
-
                         style: AappTextStyle.roboto(
                           letterSpacing: 0.3,
                           fontSize: 56,
                           weight: FontWeight.bold,
                           color: AColors.hardRed,
-
                         ),
                       ),
                       TextSpan(
@@ -232,7 +190,6 @@ class _SplashScreenState extends State<SplashScreen>
                         style: AappTextStyle.roboto(
                           fontSize: 56,
                           letterSpacing: 0.3,
-
                           weight: FontWeight.bold,
                           color: AColors.primary,
                         ),
@@ -242,7 +199,6 @@ class _SplashScreenState extends State<SplashScreen>
                         style: AappTextStyle.roboto(
                           fontSize: 56,
                           letterSpacing: 0.3,
-
                           weight: FontWeight.bold,
                           color: AColors.lightBlue,
                         ),
@@ -255,151 +211,81 @@ class _SplashScreenState extends State<SplashScreen>
               const SizedBox(height: 60),
 
               // Animated progress bar
-              if (_progressAnimationController != null && _progressAnimation != null)
-                AnimatedBuilder(
-                  animation: _progressAnimationController!,
-                  builder: (context, child) {
-                    return FadeTransition(
-                      opacity: _progressAnimation!,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 40),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(15),
-                            border: Border.all(
-                              color: AColors.primary,
-                              width: 2,
-                            ),
+              AnimatedBuilder(
+                animation: _progressAnimationController,
+                builder: (context, child) {
+                  return FadeTransition(
+                    opacity: _progressAnimation,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 40),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(15),
+                          border: Border.all(
+                            color: AColors.primary,
+                            width: 2,
                           ),
-                          child: Stack(
-                            children: [
-                              // Background bar
-                              Container(
-                                height: 20,
-                                decoration: BoxDecoration(
-                                  color: dark ? Colors.grey[800] : Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: Stack(
+                          children: [
+                            // Background bar
+                            Container(
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: dark ? Colors.grey[800] : Colors.grey[200],
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                            ),
+
+                            // Progress bar with gradient
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 100),
+                              height: 20,
+                              width: (size.width - 80) * progress,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(15),
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Colors.tealAccent,
+                                    Colors.cyan,
+                                    Colors.lightBlue,
+                                  ],
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
                                 ),
                               ),
+                            ),
 
-                              // Progress bar with gradient
-                              AnimatedContainer(
-                                duration: const Duration(milliseconds: 100),
-                                height: 20,
-                                width: (size.width - 80) * progress,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(15),
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Colors.tealAccent,
-                                      Colors.cyan,
-                                      Colors.lightBlue,
+                            // Percentage text
+                            Container(
+                              height: 20,
+                              alignment: Alignment.center,
+                              child: AnimatedOpacity(
+                                opacity: progress > 0.1 ? 1.0 : 0.0,
+                                duration: const Duration(milliseconds: 300),
+                                child: Text(
+                                  '${(progress * 100).toInt()}%',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black54,
+                                        blurRadius: 2,
+                                      ),
                                     ],
-                                    begin: Alignment.centerLeft,
-                                    end: Alignment.centerRight,
                                   ),
                                 ),
                               ),
-
-                              // Percentage text
-                              Container(
-                                height: 20,
-                                alignment: Alignment.center,
-                                child: AnimatedOpacity(
-                                  opacity: progress > 0.1 ? 1.0 : 0.0,
-                                  duration: const Duration(milliseconds: 300),
-                                  child: Text(
-                                    '${(progress * 100).toInt()}%',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                      shadows: [
-                                        Shadow(
-                                          color: Colors.black54,
-                                          blurRadius: 2,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
-                    );
-                  },
-                )
-              else
-              // Fallback progress bar without animation
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 40),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(
-                        color: AColors.primary,
-                        width: 2,
-                      ),
                     ),
-                    child: Stack(
-                      children: [
-                        // Background bar
-                        Container(
-                          height: 20,
-                          decoration: BoxDecoration(
-                            color: dark ? Colors.grey[800] : Colors.grey[200],
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                        ),
-
-                        // Progress bar with gradient
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 100),
-                          height: 20,
-                          width: (size.width - 80) * progress,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(15),
-                            gradient: const LinearGradient(
-                              colors: [
-                                Colors.tealAccent,
-                                Colors.cyan,
-                                Colors.lightBlue,
-                              ],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                            ),
-                          ),
-                        ),
-
-                        // Percentage text
-                        Container(
-                          height: 20,
-                          alignment: Alignment.center,
-                          child: AnimatedOpacity(
-                            opacity: progress > 0.1 ? 1.0 : 0.0,
-                            duration: const Duration(milliseconds: 300),
-                            child: Text(
-                              '${(progress * 100).toInt()}%',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black54,
-                                    blurRadius: 2,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                  );
+                },
+              ),
             ],
           ),
         ),

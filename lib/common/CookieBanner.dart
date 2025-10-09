@@ -5,10 +5,10 @@ class CookieBanner extends StatelessWidget {
   final Function(bool) onConsent;
 
   const CookieBanner({
-    Key? key,
+    super.key,
     required this.animation,
     required this.onConsent,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

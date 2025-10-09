@@ -71,6 +71,16 @@
     <key>NSUserTrackingUsageDescription</key>
     <string>This identifier will be used to deliver personalized ads and improve app experience.</string>
 
+    <!-- Camera and Microphone for WebView -->
+    <key>NSCameraUsageDescription</key>
+    <string>We need access to your camera to upload photos and videos on the website.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>We need access to your microphone for audio and video features on the website.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>We need access to your photo library to upload images on the website.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>We need access to save images to your photo library.</string>
+
     <!-- Custom URL scheme -->
     <key>CFBundleURLTypes</key>
     <array>

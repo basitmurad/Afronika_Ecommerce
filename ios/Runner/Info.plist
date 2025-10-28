@@ -73,9 +73,7 @@
         <true/>
     </dict>
 
-    <!-- App Tracking Transparency -->
-    <key>NSUserTrackingUsageDescription</key>
-    <string>This identifier will be used to deliver personalized ads and improve app experience.</string>
+
 
     <!-- Custom URL scheme -->
     <key>CFBundleURLTypes</key>

@@ -769,7 +769,7 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
               // ),
 
               Positioned(
-                bottom: 240,
+                bottom: 70,
                 left: 16,
                 child:
                 RefreshFloatingButton(

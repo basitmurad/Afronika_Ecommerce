@@ -770,7 +770,7 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
 
               Positioned(
                 bottom: 70,
-                left: 16,
+                right: 16,
                 child:
                 RefreshFloatingButton(
                   isRefreshing: isRefreshing,
@@ -778,60 +778,60 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
                 ),
               ),
 
-              // Payment Back Button
-              if (_isInPaymentFlow && _paymentReturnUrl != null)
-                Positioned(
-                  bottom: 230,
-                  left: 16,
-                  child: Material(
-                    elevation: 4,
-                    borderRadius: BorderRadius.circular(12),
-                    color: Colors.red.withOpacity(0.9),
-                    child: InkWell(
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: Text('Cancel Payment'),
-                            content: Text(
-                              'Are you sure you want to cancel the payment and return to cart?',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                child: Text('Continue Payment'),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                  _resetPaymentFlow();
-                                  webViewController.loadUrl(
-                                    urlRequest: URLRequest(
-                                      url: WebUri(_paymentReturnUrl!),
-                                    ),
-                                  );
-                                },
-                                style: TextButton.styleFrom(
-                                  foregroundColor: Colors.red,
-                                ),
-                                child: Text('Cancel Payment'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        child: Icon(
-                          Icons.arrow_back,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+              // // Payment Back Button
+              // if (_isInPaymentFlow && _paymentReturnUrl != null)
+              //   Positioned(
+              //     bottom: 230,
+              //     left: 16,
+              //     child: Material(
+              //       elevation: 4,
+              //       borderRadius: BorderRadius.circular(12),
+              //       color: Colors.red.withOpacity(0.9),
+              //       child: InkWell(
+              //         onTap: () {
+              //           showDialog(
+              //             context: context,
+              //             builder: (context) => AlertDialog(
+              //               title: Text('Cancel Payment'),
+              //               content: Text(
+              //                 'Are you sure you want to cancel the payment and return to cart?',
+              //               ),
+              //               actions: [
+              //                 TextButton(
+              //                   onPressed: () => Navigator.of(context).pop(),
+              //                   child: Text('Continue Payment'),
+              //                 ),
+              //                 TextButton(
+              //                   onPressed: () {
+              //                     Navigator.of(context).pop();
+              //                     _resetPaymentFlow();
+              //                     webViewController.loadUrl(
+              //                       urlRequest: URLRequest(
+              //                         url: WebUri(_paymentReturnUrl!),
+              //                       ),
+              //                     );
+              //                   },
+              //                   style: TextButton.styleFrom(
+              //                     foregroundColor: Colors.red,
+              //                   ),
+              //                   child: Text('Cancel Payment'),
+              //                 ),
+              //               ],
+              //             ),
+              //           );
+              //         },
+              //         borderRadius: BorderRadius.circular(12),
+              //         child: Container(
+              //           padding: const EdgeInsets.all(12),
+              //           child: Icon(
+              //             Icons.arrow_back,
+              //             color: Colors.white,
+              //             size: 24,
+              //           ),
+              //         ),
+              //       ),
+              //     ),
+              //   ),
 
               // Error overlay
               if (hasError && !isLoading)

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "765286831306",
+    "project_id": "afronika-2fb4b",
+    "storage_bucket": "afronika-2fb4b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:765286831306:android:43ca32675acb0357961033",
+        "android_client_info": {
+          "package_name": "com.benjamin_pro.afronika_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxNv6bbVDPykjrgfyT3Se_xS0fR68mGlA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

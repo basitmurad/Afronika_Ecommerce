@@ -14,6 +14,7 @@ import '../features/about/AboutAppScreen.dart';
 import '../features/contact/ContactScreen.dart';
 import '../features/privacy/PrivacyPolicyScreen.dart';
 import '../helpers/PaymentUrlChecker.dart';
+import '../helpers/deep_link_servive.dart';
 import '../helpers/payment_dialog_helper.dart';
 import '../helpers/payment_navigation_helper.dart';
 import '../helpers/payment_status_checker.dart';
@@ -30,6 +31,7 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
   late InAppWebViewController webViewController;
   late AnimationController _bannerAnimationController;
   late Animation<double> _bannerAnimation;
+  StreamSubscription<String>? _deepLinkSubscription;
 
   String currentUrl = "https://www.afronika.com/";
   bool isLoading = true;
@@ -409,16 +411,47 @@ class _AfronikaBrowserAppState extends State<AfronikaBrowserApp>
     super.initState();
     _initializeAnimations();
     WidgetsBinding.instance.addObserver(this);
+    _setupDeepLinkListener();
+
   }
 
   @override
   void dispose() {
     _bannerAnimationController.dispose();
     _paymentCheckTimer?.cancel();
+    _deepLinkSubscription?.cancel();  // Clean up deep link subscription
+
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
+  void _setupDeepLinkListener() {
+    _deepLinkSubscription = DeepLinkService()
+        .deepLinkStream
+        .listen((String url) {
+      debugPrint('Deep link navigation triggered: $url');
+      _handleDeepLink(url);
+    });
+  }
+  void _handleDeepLink(String url) {
+    debugPrint('Navigating to deep link URL: $url');
 
+    setState(() {
+      currentUrl = url;
+      isLoading = true;
+      hasError = false;
+      errorMessage = '';
+    });
+
+    // Check if webViewController is initialized
+    try {
+      webViewController.loadUrl(
+        urlRequest: URLRequest(url: WebUri(url)),
+      );
+    } catch (e) {
+      debugPrint('Error loading deep link URL: $e');
+      // If webViewController is not ready yet, the initial URL will be used
+    }
+  }
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);

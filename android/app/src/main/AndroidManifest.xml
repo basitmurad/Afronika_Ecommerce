@@ -63,6 +63,8 @@
                     android:scheme="https"
                     android:host="www.afronika.com" />
             </intent-filter>
+
+
         </activity>
 
         <!-- Flutter metadata -->
